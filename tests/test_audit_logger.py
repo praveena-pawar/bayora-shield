@@ -62,3 +62,34 @@ def test_empty_chain_is_valid():
     logger = AuditLogger()
 
     assert logger.verify_chain() is True
+
+
+
+
+def test_audit_events_persist_across_logger_instances(tmp_path):
+    database_path = str(tmp_path / "audit.db")
+
+    first_logger = AuditLogger(db_path=database_path)
+
+    first_logger.record_event(
+        decision="BLOCK",
+        reason="Possible instruction override attempt",
+    )
+
+    first_logger.close()
+
+    second_logger = AuditLogger(db_path=database_path)
+
+    try:
+        assert len(second_logger.events) == 1
+
+        event = second_logger.events[0]
+
+        assert event["decision"] == "BLOCK"
+        assert (
+            event["reason"]
+            == "Possible instruction override attempt"
+        )
+        assert second_logger.verify_chain() is True
+    finally:
+        second_logger.close()

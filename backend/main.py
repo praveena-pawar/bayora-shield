@@ -1,3 +1,4 @@
+from pathlib import Path
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
@@ -15,7 +16,12 @@ app = FastAPI(
     version="0.3.0",
 )
 
-audit_logger = AuditLogger()
+
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+DATABASE_PATH = PROJECT_ROOT / "data" / "audit.db"
+
+audit_logger = AuditLogger(db_path=str(DATABASE_PATH))
 
 
 # Request and response schemas
