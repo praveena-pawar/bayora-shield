@@ -1,0 +1,55 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: bayora-shield:0.1.0
+    container_name: bayora-shield-api
+    ports:
+      - "8001:8000"
+    volumes:
+      - bayora_audit_data:/app/data
+    networks:
+      - api_network
+    restart: unless-stopped
+
+  red-team:
+    build:
+      context: .
+      dockerfile: Dockerfile.redteam
+    image: bayora-redteam:0.1.0
+    container_name: bayora-redteam
+    command:
+      - uvicorn
+      - security.red_team_service:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8002"
+    ports:
+      - "127.0.0.1:8002:8002"
+    networks:
+      - red_team_network
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,noexec,nosuid
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    mem_limit: 256m
+    cpus: 0.50
+    restart: unless-stopped
+
+
+
+
+volumes:
+  bayora_audit_data:
+
+networks:
+  api_network:
+    internal: false
+  red_team_network:
+    internal: false
