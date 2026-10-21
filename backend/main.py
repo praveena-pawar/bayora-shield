@@ -2,6 +2,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
+from evaluator.evaluation_engine import EvaluationCase, evaluate_cases
 from evaluator.security_validator import run_validation
 from security.audit_logger import AuditLogger
 from security.prompt_detector import inspect_prompt
@@ -38,6 +39,22 @@ class PromptInspectionResponse(BaseModel):
     decision: str
     reason: str
 
+
+class EvaluationCaseRequest(BaseModel):
+    case_id: str = Field(min_length=1, max_length=100)
+    prompt: str = Field(min_length=1, max_length=10_000)
+    expected_decision: str = Field(
+        pattern=r"^(ALLOW|BLOCK|FLAG)$",
+        description="Expected security decision.",
+    )
+
+
+class EvaluationRequest(BaseModel):
+    cases: list[EvaluationCaseRequest] = Field(
+        min_length=1,
+        max_length=100,
+        description="Controlled test cases for evaluation.",
+    )
 
 # Health endpoint
 
@@ -80,3 +97,20 @@ def inspect_prompt_endpoint(
 def validate_security() -> dict:
     """Run the configured security validation checks."""
     return run_validation()
+
+
+
+@app.post("/evaluation/run")
+def run_evaluation(request: EvaluationRequest) -> dict:
+    """Run controlled security test cases and return an evaluation report."""
+
+    cases = [
+        EvaluationCase(
+            case_id=case.case_id,
+            prompt=case.prompt,
+            expected_decision=case.expected_decision,
+        )
+        for case in request.cases
+    ]
+
+    return evaluate_cases(cases, audit_logger)
