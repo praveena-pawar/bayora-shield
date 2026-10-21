@@ -1,18 +1,25 @@
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
-from security.red_team import create_test_payload
+from security.red_team import (
+    AttackCategory,
+    ExpectedDecision,
+    create_test_payload,
+)
+
 
 app = FastAPI(
     title="Bayora Red Team Service",
-    description="Creates controlled security-testing payloads.",
-    version="0.1.0",
+    description="Creates categorized security-testing payloads.",
+    version="0.2.0",
 )
 
 
 class PayloadRequest(BaseModel):
     payload_id: str = Field(min_length=1, max_length=100)
     content: str = Field(min_length=1, max_length=10_000)
+    category: AttackCategory = AttackCategory.INSTRUCTION_OVERRIDE
+    expected_decision: ExpectedDecision = ExpectedDecision.BLOCK
 
 
 @app.get("/health")
@@ -28,9 +35,13 @@ def create_payload(request: PayloadRequest) -> dict[str, str]:
     payload = create_test_payload(
         payload_id=request.payload_id,
         content=request.content,
+        category=request.category,
+        expected_decision=request.expected_decision,
     )
 
     return {
         "payload_id": payload.payload_id,
         "content": payload.content,
+        "category": payload.category.value,
+        "expected_decision": payload.expected_decision.value,
     }
