@@ -1,5 +1,7 @@
 from dataclasses import asdict, dataclass
 
+from security.red_team import RedTeamPayload
+
 from security.audit_logger import AuditLogger
 from security.prompt_detector import inspect_prompt
 
@@ -9,6 +11,21 @@ class EvaluationCase:
     case_id: str
     prompt: str
     expected_decision: str
+
+
+def create_evaluation_cases(
+    payloads: list[RedTeamPayload],
+) -> list[EvaluationCase]:
+    """Convert structured Red Team payloads into evaluation cases."""
+
+    return [
+        EvaluationCase(
+            case_id=payload.payload_id,
+            prompt=payload.content,
+            expected_decision=payload.expected_decision.value,
+        )
+        for payload in payloads
+    ]
 
 
 @dataclass(frozen=True)
