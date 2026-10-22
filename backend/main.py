@@ -1,3 +1,15 @@
+from evaluator.evaluation_engine import (
+    EvaluationCase,
+    create_evaluation_cases,
+    evaluate_cases,
+)
+from security.red_team import (
+    AttackCategory,
+    ExpectedDecision,
+    create_test_payload,
+)
+
+
 from pathlib import Path
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
@@ -56,6 +68,21 @@ class EvaluationRequest(BaseModel):
         description="Controlled test cases for evaluation.",
     )
 
+class RedTeamPayloadRequest(BaseModel):
+    payload_id: str = Field(min_length=1, max_length=100)
+    content: str = Field(min_length=1, max_length=10_000)
+    category: AttackCategory
+    expected_decision: ExpectedDecision
+
+
+class RedTeamEvaluationRequest(BaseModel):
+    payloads: list[RedTeamPayloadRequest] = Field(
+        min_length=1,
+        max_length=100,
+    )
+
+
+
 # Health endpoint
 
 @app.get("/health")
@@ -112,5 +139,27 @@ def run_evaluation(request: EvaluationRequest) -> dict:
         )
         for case in request.cases
     ]
+
+    return evaluate_cases(cases, audit_logger)
+
+
+
+@app.post("/evaluation/run-red-team")
+def run_red_team_evaluation(
+    request: RedTeamEvaluationRequest,
+) -> dict:
+    """Evaluate categorized Red Team payloads."""
+
+    payloads = [
+        create_test_payload(
+            payload_id=payload.payload_id,
+            content=payload.content,
+            category=payload.category,
+            expected_decision=payload.expected_decision,
+        )
+        for payload in request.payloads
+    ]
+
+    cases = create_evaluation_cases(payloads)
 
     return evaluate_cases(cases, audit_logger)
