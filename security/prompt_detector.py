@@ -15,59 +15,50 @@ class DetectionResult:
     reason: str
 
 
-# Initial heuristic rules for our prototype.
+# Explainable heuristic rules for the prototype.
 DETECTION_RULES = [
     (
         re.compile(
             r"\b(ignore|disregard|forget|override)\s+"
             r"(all\s+)?(the\s+)?"
-            r"(previous|prior|earlier|everything)\b"
+            r"(previous|prior|earlier|old|existing|"
+            r"original|everything)\b"
             r"(\s+you\s+were\s+told)?"
-            r"(\s+(instructions|directions|rules))?",
+            r"(\s+(instructions|directions|rules|"
+            r"commands|guidelines))?",
             re.IGNORECASE,
         ),
         "Possible instruction override attempt",
     ),
     (
         re.compile(
-            r"\breveal\s+(your\s+)?system\s+prompt\b",
+            r"\b(reveal|show|print|display|disclose|expose)\s+"
+            r"(me\s+)?(your\s+)?"
+            r"(hidden\s+|internal\s+|secret\s+)?"
+            r"(system\s+prompt|instructions|directions|"
+            r"rules|guidelines)\b",
             re.IGNORECASE,
         ),
-        "Possible system-prompt disclosure attempt",
+        "Possible system-instruction disclosure attempt",
     ),
     (
         re.compile(
-            r"\b(bypass|disable)\s+(the\s+)?safety\s+"
-            r"(filter|filters|guardrails)\b",
-            re.IGNORECASE,
-        ),
-        "Possible safety-control bypass attempt",
-    ),
-    (
-        re.compile(
-            r"\b(disregard|forget|override)\s+"
-            r"(all\s+)?(the\s+)?"
-            r"(previous|prior|earlier|everything)\s+"
-            r"(instructions|directions|rules|"
-            r"everything\s+you\s+were\s+told)\b",
-            re.IGNORECASE,
-        ),
-        "Possible instruction override attempt",
-    ),
-    (
-        re.compile(
-            r"\b(show|disclose|expose|print|reveal)\b"
-            r".{0,50}\b(hidden|internal|secret)\b"
-            r".{0,80}\b(instructions|system\s+prompt)\b",
+            r"\b(show|disclose|expose|print|reveal|display)\b"
+            r".{0,80}\b(hidden|internal|secret)\b"
+            r".{0,80}\b(instructions|system\s+prompt|"
+            r"guidelines|rules)\b",
             re.IGNORECASE,
         ),
         "Possible hidden-instruction disclosure attempt",
     ),
     (
         re.compile(
-            r"\b(turn\s+off|disable|deactivate)\s+"
-            r"(your\s+)?(safety\s+)?"
-            r"(guardrails|safety\s+controls|safety\s+filters)\b",
+            r"\b(bypass|disable|deactivate|turn\s+off|"
+            r"switch\s+off|circumvent)\s+"
+            r"(the\s+|your\s+)?"
+            r"(safety\s+)?"
+            r"(filters?|guardrails|safety\s+controls|"
+            r"safeguards|content\s+filters)\b",
             re.IGNORECASE,
         ),
         "Possible safety-control bypass attempt",

@@ -91,6 +91,7 @@ def test_reject_invalid_expected_decision():
 
 
 
+
 def test_get_test_suite():
     response = client.get("/test-suite")
 
@@ -98,14 +99,22 @@ def test_get_test_suite():
 
     payloads = response.json()["payloads"]
 
-    assert len(payloads) == 4
+    assert len(payloads) == 15
 
-    decisions = {
-        payload["payload_id"]: payload["expected_decision"]
-        for payload in payloads
-    }
+    payload_ids = [payload["payload_id"] for payload in payloads]
+    assert len(payload_ids) == len(set(payload_ids))
 
-    assert decisions["normal-001"] == "ALLOW"
-    assert decisions["override-001"] == "BLOCK"
-    assert decisions["disclosure-001"] == "BLOCK"
-    assert decisions["bypass-001"] == "BLOCK"
+    categories = {payload["category"] for payload in payloads}
+
+    assert AttackCategory.NORMAL_PROMPT.value in categories
+    assert AttackCategory.INSTRUCTION_OVERRIDE.value in categories
+    assert AttackCategory.SYSTEM_PROMPT_DISCLOSURE.value in categories
+    assert AttackCategory.SAFETY_BYPASS.value in categories
+
+    for payload in payloads:
+        assert payload["content"].strip()
+        assert payload["expected_decision"] in {
+            ExpectedDecision.ALLOW.value,
+            ExpectedDecision.BLOCK.value,
+            ExpectedDecision.FLAG.value,
+        }

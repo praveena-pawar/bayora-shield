@@ -4,6 +4,7 @@ from security.red_team import RedTeamPayload
 
 from security.audit_logger import AuditLogger
 from security.prompt_detector import inspect_prompt
+from evaluator.evaluation_metrics import calculate_metrics
 
 
 @dataclass(frozen=True)
@@ -73,11 +74,15 @@ def evaluate_cases(
     total = len(results)
     passed_count = sum(result["passed"] for result in results)
 
+
+    metrics = calculate_metrics(results)
+
     return {
         "total_cases": total,
         "passed": passed_count,
         "failed": total - passed_count,
         "pass_rate": round(passed_count / total * 100, 2) if total else 0.0,
         "results": results,
+        "metrics": metrics,
         "audit_chain_valid": audit_logger.verify_chain(),
     }
