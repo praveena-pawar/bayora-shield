@@ -40,13 +40,14 @@ class EvaluationResult:
 def evaluate_cases(
     cases: list[EvaluationCase],
     audit_logger: AuditLogger,
+    detector=inspect_prompt,
 ) -> dict:
     """Evaluate prompts and record each result in the audit log."""
 
     results = []
 
     for case in cases:
-        detection = inspect_prompt(case.prompt)
+        detection = detector(case.prompt)
         actual_decision = detection.decision.value
         passed = actual_decision == case.expected_decision
 

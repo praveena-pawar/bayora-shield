@@ -9,6 +9,8 @@ from security.red_team import (
     create_test_payload,
 )
 
+
+
 import httpx
 from fastapi import HTTPException
 
@@ -20,7 +22,11 @@ from pydantic import BaseModel, Field
 from evaluator.evaluation_engine import EvaluationCase, evaluate_cases
 from evaluator.security_validator import run_validation
 from security.audit_logger import AuditLogger
-from security.prompt_detector import inspect_prompt
+from security.prompt_detector import (
+    DetectionResult,
+    SecurityDecision,
+    inspect_prompt,
+)
 
 
 app = FastAPI(
@@ -38,6 +44,58 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATABASE_PATH = PROJECT_ROOT / "data" / "audit.db"
 
 audit_logger = AuditLogger(db_path=str(DATABASE_PATH))
+
+
+
+def inspect_with_blue_team(prompt: str) -> DetectionResult:
+    """Send a prompt to the separate Blue Team service."""
+
+    blue_team_url = "http://blue-team:8003/defend"
+
+    try:
+        response = httpx.post(
+            blue_team_url,
+            json={"prompt": prompt},
+            timeout=5.0,
+        )
+        response.raise_for_status()
+        data = response.json()
+
+    except httpx.TimeoutException as exc:
+        raise HTTPException(
+            status_code=504,
+            detail="Blue Team service timed out.",
+        ) from exc
+
+    except httpx.HTTPError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="Could not communicate with the Blue Team service.",
+        ) from exc
+
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="Blue Team service returned invalid JSON.",
+        ) from exc
+
+    try:
+        decision = SecurityDecision(data["decision"])
+        reason = data["reason"]
+
+        if not isinstance(reason, str):
+            raise ValueError("Invalid reason")
+
+    except (KeyError, TypeError, ValueError) as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="Blue Team service returned an invalid response.",
+        ) from exc
+
+    return DetectionResult(
+        decision=decision,
+        reason=reason,
+    )
 
 
 # Request and response schemas
@@ -219,3 +277,70 @@ def run_red_team_suite() -> dict:
 
     cases = create_evaluation_cases(payloads)
     return evaluate_cases(cases, audit_logger)
+
+
+
+
+@app.post("/evaluation/run-blue-team-suite")
+def run_blue_team_suite() -> dict:
+    """Evaluate the Red Team test suite against the Blue Team service."""
+
+    red_team_url = "http://red-team:8002/test-suite"
+
+    try:
+        response = httpx.get(red_team_url, timeout=5.0)
+        response.raise_for_status()
+        data = response.json()
+
+    except httpx.TimeoutException as exc:
+        raise HTTPException(
+            status_code=504,
+            detail="Red Team service timed out.",
+        ) from exc
+
+    except httpx.HTTPError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="Could not retrieve the Red Team test suite.",
+        ) from exc
+
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="Red Team service returned invalid JSON.",
+        ) from exc
+
+    raw_payloads = data.get("payloads")
+
+    if not isinstance(raw_payloads, list) or not raw_payloads:
+        raise HTTPException(
+            status_code=502,
+            detail="Red Team service returned an invalid or empty test suite.",
+        )
+
+    try:
+        payloads = [
+            create_test_payload(
+                payload_id=item["payload_id"],
+                content=item["content"],
+                category=AttackCategory(item["category"]),
+                expected_decision=ExpectedDecision(
+                    item["expected_decision"]
+                ),
+            )
+            for item in raw_payloads
+        ]
+
+    except (KeyError, TypeError, ValueError, AttributeError) as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="Red Team service returned an invalid payload.",
+        ) from exc
+
+    cases = create_evaluation_cases(payloads)
+
+    return evaluate_cases(
+        cases,
+        audit_logger,
+        detector=inspect_with_blue_team,
+    )

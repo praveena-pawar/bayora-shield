@@ -1,3 +1,4 @@
+
 services:
   api:
     build:
@@ -12,6 +13,7 @@ services:
     networks:
       - api_network
       - integration_network
+      - blue_team_network
     restart: unless-stopped
 
   red-team:
@@ -44,8 +46,27 @@ services:
     cpus: 0.50
     restart: unless-stopped
 
-
-
+  blue-team:
+    build:
+      context: .
+      dockerfile: Dockerfile.blueteam
+    image: bayora-blueteam:0.1.0
+    container_name: bayora-blueteam
+    ports:
+      - "127.0.0.1:8003:8003"
+    networks:
+      - blue_team_network
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,noexec,nosuid
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    mem_limit: 256m
+    cpus: 0.50
+    restart: unless-stopped
 
 volumes:
   bayora_audit_data:
@@ -57,3 +78,5 @@ networks:
     internal: false
   integration_network:
     internal: true
+  blue_team_network:
+    internal: false
