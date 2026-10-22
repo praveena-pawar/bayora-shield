@@ -138,3 +138,88 @@ def test_run_red_team_suite(monkeypatch):
     assert result["failed"] == 0
     assert result["pass_rate"] == 100.0
     assert result["audit_chain_valid"] is True
+
+
+
+def test_red_team_suite_timeout(monkeypatch):
+    import httpx
+    import backend.main as main
+
+    def raise_timeout(*args, **kwargs):
+        raise httpx.TimeoutException("Red Team service timed out")
+
+    monkeypatch.setattr(main.httpx, "get", raise_timeout)
+
+    response = client.post("/evaluation/run-red-team-suite")
+
+    assert response.status_code == 504
+    assert response.json()["detail"] == "Red Team service timed out."
+
+
+
+def test_red_team_suite_connection_failure(monkeypatch):
+    import httpx
+    import backend.main as main
+
+    def raise_connection_error(*args, **kwargs):
+        raise httpx.ConnectError("Red Team service is unavailable")
+
+    monkeypatch.setattr(main.httpx, "get", raise_connection_error)
+
+    response = client.post("/evaluation/run-red-team-suite")
+
+    assert response.status_code == 502
+    assert response.json()["detail"] == (
+        "Could not retrieve the Red Team test suite."
+    )
+
+
+
+def test_red_team_suite_invalid_json(monkeypatch):
+    import backend.main as main
+
+    class InvalidJSONResponse:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            raise ValueError("Invalid JSON response")
+
+    monkeypatch.setattr(
+        main.httpx,
+        "get",
+        lambda *args, **kwargs: InvalidJSONResponse(),
+    )
+
+    response = client.post("/evaluation/run-red-team-suite")
+
+    assert response.status_code == 502
+    assert response.json()["detail"] == (
+        "Red Team service returned invalid JSON."
+    )
+
+
+
+
+def test_red_team_suite_empty_payloads(monkeypatch):
+    import backend.main as main
+
+    class EmptySuiteResponse:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"payloads": []}
+
+    monkeypatch.setattr(
+        main.httpx,
+        "get",
+        lambda *args, **kwargs: EmptySuiteResponse(),
+    )
+
+    response = client.post("/evaluation/run-red-team-suite")
+
+    assert response.status_code == 502
+    assert response.json()["detail"] == (
+        "Red Team service returned an invalid or empty test suite."
+    )
