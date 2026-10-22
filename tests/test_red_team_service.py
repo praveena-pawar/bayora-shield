@@ -86,3 +86,26 @@ def test_reject_invalid_expected_decision():
     )
 
     assert response.status_code == 422
+
+
+
+
+
+def test_get_test_suite():
+    response = client.get("/test-suite")
+
+    assert response.status_code == 200
+
+    payloads = response.json()["payloads"]
+
+    assert len(payloads) == 4
+
+    decisions = {
+        payload["payload_id"]: payload["expected_decision"]
+        for payload in payloads
+    }
+
+    assert decisions["normal-001"] == "ALLOW"
+    assert decisions["override-001"] == "BLOCK"
+    assert decisions["disclosure-001"] == "BLOCK"
+    assert decisions["bypass-001"] == "BLOCK"

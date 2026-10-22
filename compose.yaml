@@ -11,6 +11,7 @@ services:
       - bayora_audit_data:/app/data
     networks:
       - api_network
+      - integration_network
     restart: unless-stopped
 
   red-team:
@@ -30,6 +31,7 @@ services:
       - "127.0.0.1:8002:8002"
     networks:
       - red_team_network
+      - integration_network
     read_only: true
     tmpfs:
       - /tmp:size=16m,noexec,nosuid
@@ -53,3 +55,5 @@ networks:
     internal: false
   red_team_network:
     internal: false
+  integration_network:
+    internal: true

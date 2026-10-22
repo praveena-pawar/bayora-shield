@@ -9,6 +9,9 @@ from security.red_team import (
     create_test_payload,
 )
 
+import httpx
+from fastapi import HTTPException
+
 
 from pathlib import Path
 from fastapi import FastAPI
@@ -162,4 +165,57 @@ def run_red_team_evaluation(
 
     cases = create_evaluation_cases(payloads)
 
+    return evaluate_cases(cases, audit_logger)
+
+
+
+@app.post("/evaluation/run-red-team-suite")
+def run_red_team_suite() -> dict:
+    """Fetch the Red Team suite and evaluate it through the existing engine."""
+    red_team_url = "http://red-team:8002/test-suite"
+
+    try:
+        response = httpx.get(red_team_url, timeout=5.0)
+        response.raise_for_status()
+        data = response.json()
+    except httpx.TimeoutException as exc:
+        raise HTTPException(
+            status_code=504,
+            detail="Red Team service timed out.",
+        ) from exc
+    except httpx.HTTPError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="Could not retrieve the Red Team test suite.",
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="Red Team service returned invalid JSON.",
+        ) from exc
+
+    raw_payloads = data.get("payloads")
+    if not isinstance(raw_payloads, list) or not raw_payloads:
+        raise HTTPException(
+            status_code=502,
+            detail="Red Team service returned an invalid or empty test suite.",
+        )
+
+    try:
+        payloads = [
+            create_test_payload(
+                payload_id=item["payload_id"],
+                content=item["content"],
+                category=AttackCategory(item["category"]),
+                expected_decision=ExpectedDecision(item["expected_decision"]),
+            )
+            for item in raw_payloads
+        ]
+    except (KeyError, TypeError, ValueError, AttributeError) as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="Red Team service returned an invalid payload.",
+        ) from exc
+
+    cases = create_evaluation_cases(payloads)
     return evaluate_cases(cases, audit_logger)
