@@ -17,30 +17,47 @@ class DetectionResult:
 
 # Explainable heuristic rules for the prototype.
 DETECTION_RULES = [
+    # Rule 1: Instruction manipulation
     (
         re.compile(
-            r"\b(ignore|disregard|forget|override)\s+"
-            r"(all\s+)?(the\s+)?"
-            r"(previous|prior|earlier|old|existing|"
-            r"original|everything)\b"
-            r"(\s+you\s+were\s+told)?"
-            r"(\s+(instructions|directions|rules|"
+            r"\b("
+            r"ignore|disregard|forget|override|"
+            r"replace|supersede|abandon"
+            r")\s+"
+            r"(?:(?:all|the|your|any)\s+)*"
+            r"(?:"
+            r"previous|prior|earlier|old|existing|original|"
+            r"everything|earlier\s+given|"
+            r"earlier\s+provided"
+            r")\b"
+            r"(?:\s+(?:you\s+were\s+told|you\s+received))?"
+            r"(?:\s+(?:instructions|directions|rules|"
             r"commands|guidelines))?",
             re.IGNORECASE,
         ),
         "Possible instruction override attempt",
     ),
+
+    # Rule 2: Direct system-instruction disclosure
     (
         re.compile(
-            r"\b(reveal|show|print|display|disclose|expose)\s+"
-            r"(me\s+)?(your\s+)?"
-            r"(hidden\s+|internal\s+|secret\s+)?"
-            r"(system\s+prompt|instructions|directions|"
-            r"rules|guidelines)\b",
+            r"\b("
+            r"reveal|show|print|display|disclose|expose|"
+            r"tell\s+me|provide|share|"
+            r"what\s+(?:are|were|is|was)"
+            r")\b"
+            r".{0,100}\b("
+            r"hidden|internal|secret|private|confidential|"
+            r"system\s+prompt|instructions|directions|"
+            r"rules|guidelines|configuration|"
+            r"messages?"
+            r")\b",
             re.IGNORECASE,
         ),
         "Possible system-instruction disclosure attempt",
     ),
+
+    # Rule 3: Indirect hidden-instruction disclosure
     (
         re.compile(
             r"\b(show|disclose|expose|print|reveal|display)\b"
@@ -51,18 +68,35 @@ DETECTION_RULES = [
         ),
         "Possible hidden-instruction disclosure attempt",
     ),
+
+    # Rule 4: Safety-control bypass
     (
         re.compile(
-            r"\b(bypass|disable|deactivate|turn\s+off|"
-            r"switch\s+off|circumvent)\s+"
-            r"(the\s+|your\s+)?"
-            r"(safety\s+)?"
-            r"(filters?|guardrails|safety\s+controls|"
-            r"safeguards|content\s+filters)\b",
+            r"\b("
+            r"bypass|circumvent|evade|"
+            r"turn\s+off|switch\s+off|"
+            r"stop\s+applying|"
+            r"find\s+a\s+way\s+around"
+            r")\b"
+            r".{0,100}\b("
+            r"safety|safeguards?|guardrails|"
+            r"filters?|restrictions?|"
+            r"protections?|controls?|"
+            r"content\s+polic(?:y|ies)"
+            r")\b"
+            r"|"
+            r"\b("
+            r"disable|deactivate"
+            r")\s+"
+            r"(?:your\s+|the\s+)?"
+            r"(?:safety\s+)?"
+            r"(?:filters?|guardrails|safeguards?|"
+            r"protections?|controls?)\b",
             re.IGNORECASE,
         ),
         "Possible safety-control bypass attempt",
     ),
+
 ]
 
 
