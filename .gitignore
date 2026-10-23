@@ -33,3 +33,6 @@ Thumbs.db
 
 # Local application data
 data/
+
+# Generated evaluation reports
+reports/
