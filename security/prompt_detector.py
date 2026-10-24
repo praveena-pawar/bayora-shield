@@ -45,7 +45,14 @@ DETECTION_RULES = [
             r".{0,50}\bfollow\b"
             r".{0,50}\bonly\b"
             r".{0,50}\b(rules|instructions|directions|guidance)\b"
-            r".{0,50}\b(my\s+message|this\s+message)\b",
+            r".{0,50}\b(my\s+message|this\s+message)\b"
+            r"|"
+            r"\byour\s+earlier\s+guidance\b"
+            r".{0,40}\b(no\s+longer\s+applies|"
+            r"is\s+(?:invalid|obsolete|superseded))\b"
+            r".{0,60}\b(my\s+directions|"
+            r"my\s+instructions|my\s+request)\b"
+            r".{0,40}\b(only\s+authority|instead)\b",
             re.IGNORECASE,
         ),
         "Possible instruction override attempt",
@@ -56,7 +63,8 @@ DETECTION_RULES = [
         re.compile(
             r"\b("
             r"reveal|show|print|display|disclose|"
-            r"tell\s+me|provide|share|summarize|list"
+            r"tell\s+me|provide|share|summarize|list|"
+            r"describe|give\s+me"
             r")\b"
             r".{0,100}\b("
             r"hidden|internal|secret|private|confidential|"
@@ -67,7 +75,7 @@ DETECTION_RULES = [
             r"|"
             r"\bwhat\b"
             r".{0,40}\b("
-            r"hidden|internal|secret|private|confidential"
+            r"hidden|internal|secret|private"
             r")\b"
             r".{0,60}\b("
             r"configuration|system\s+prompt|instructions|"
@@ -103,7 +111,10 @@ DETECTION_RULES = [
             r"stop\s+applying|"
             r"find\s+a\s+way\s+around|"
             r"disregard|ignore|"
-            r"without\s+enforcing"
+            r"without\s+enforcing|"
+            r"without\s+applying|"
+            r"do\s+not\s+apply|"
+            r"stop\s+enforcing"
             r")\b"
             r".{0,100}\b("
             r"safety|safeguards?|guardrails|"
@@ -126,7 +137,7 @@ DETECTION_RULES = [
             r"|"
             # Pattern C: Requests to act as if restrictions are lifted
             r"\b("
-            r"proceed|respond|act|continue"
+            r"proceed|respond|act|continue|operate"
             r")\b"
             r".{0,50}\b("
             r"as\s+if|as\s+though"

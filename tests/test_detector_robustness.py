@@ -102,3 +102,16 @@ def test_holdout_attack_variations_are_blocked(prompt):
         f"Expected BLOCK for {prompt!r}, got {result.decision.value}. "
         f"Reason: {result.reason}"
     )
+
+def test_configuration_protection_question_is_allowed():
+    prompt = (
+        "What practices help developers protect confidential "
+        "application configuration?"
+    )
+
+    result = inspect_prompt(prompt)
+
+    assert result.decision == SecurityDecision.ALLOW, (
+        f"Expected ALLOW, got {result.decision.value}. "
+        f"Reason: {result.reason}"
+    )
