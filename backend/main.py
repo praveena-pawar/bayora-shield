@@ -9,6 +9,13 @@ from security.red_team import (
     create_test_payload,
 )
 
+import secrets
+import threading
+
+from security.commit_reveal import (
+    create_commitment,
+    verify_commitment,
+)
 
 
 import httpx
@@ -215,6 +222,40 @@ class RedTeamEvaluationRequest(BaseModel):
         min_length=1,
         max_length=100,
     )
+
+class CommitRequest(BaseModel):
+    payload: str = Field(min_length=1, max_length=10_000)
+
+
+class CommitResponse(BaseModel):
+    commitment_id: str
+    commitment_hash: str
+    status: str
+
+
+class RevealRequest(BaseModel):
+    commitment_id: str = Field(min_length=1)
+    payload: str = Field(min_length=1, max_length=10_000)
+    nonce: str = Field(min_length=1)
+
+
+class RevealResponse(BaseModel):
+    commitment_id: str
+    valid: bool
+    status: str
+
+class BlindEvaluationResponse(BaseModel):
+    commitment_id: str
+    commitment_hash: str
+    decision: str
+    reason: str
+    commitment_valid: bool
+    evaluation_passed: bool
+
+
+
+commit_reveal_lock = threading.Lock()
+pending_commitments: dict[str, dict] = {}
 
 
 
@@ -505,4 +546,197 @@ def run_blue_team_suite() -> dict:
         cases,
         audit_logger,
         detector=inspect_with_blue_team,
+    )
+
+
+
+@app.post(
+    "/commit-reveal/commit",
+    response_model=CommitResponse,
+)
+def commit_payload(request: CommitRequest) -> CommitResponse:
+    """Commit to a payload without revealing its contents."""
+
+    commitment = create_commitment(request.payload)
+    commitment_id = secrets.token_urlsafe(16)
+
+    with commit_reveal_lock:
+        pending_commitments[commitment_id] = {
+            "commitment_hash": commitment.commitment_hash,
+            "nonce": commitment.nonce,
+            "payload": request.payload,
+        }
+
+    audit_logger.record_event(
+        decision="COMMIT",
+        reason=f"Commitment created: {commitment_id}",
+    )
+
+    return CommitResponse(
+        commitment_id=commitment_id,
+        commitment_hash=commitment.commitment_hash,
+        status="committed",
+    )
+
+
+@app.post(
+    "/commit-reveal/verify",
+    response_model=RevealResponse,
+)
+def reveal_payload(request: RevealRequest) -> RevealResponse:
+    """Verify a revealed payload against its stored commitment."""
+
+    with commit_reveal_lock:
+        stored = pending_commitments.get(request.commitment_id)
+
+        if stored is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Commitment not found or already revealed.",
+            )
+
+        valid = (
+            request.payload == stored["payload"]
+            and verify_commitment(
+                request.payload,
+                request.nonce,
+                stored["commitment_hash"],
+            )
+            and request.nonce == stored["nonce"]
+        )
+
+        del pending_commitments[request.commitment_id]
+
+    audit_logger.record_event(
+        decision="REVEAL_VALID" if valid else "REVEAL_INVALID",
+        reason=f"Commitment verification: {request.commitment_id}",
+    )
+
+    return RevealResponse(
+        commitment_id=request.commitment_id,
+        valid=valid,
+        status="verified" if valid else "verification_failed",
+    )
+
+
+
+
+@app.post("/commit-reveal/run-evaluation")
+def run_commit_reveal_evaluation(
+    commitment_id: str,
+) -> dict:
+    """Evaluate a committed payload before it is revealed."""
+
+    with commit_reveal_lock:
+        stored = pending_commitments.get(commitment_id)
+
+        if stored is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Commitment not found or already revealed.",
+            )
+
+        if stored.get("evaluation") is not None:
+            raise HTTPException(
+                status_code=409,
+                detail="This commitment has already been evaluated.",
+            )
+
+        payload = stored["payload"]
+
+    # Do not hold the lock while making a network request.
+    result = inspect_with_blue_team(payload)
+
+    with commit_reveal_lock:
+        stored = pending_commitments.get(commitment_id)
+
+        if stored is None:
+            raise HTTPException(
+                status_code=409,
+                detail="Commitment state changed during evaluation.",
+            )
+
+        stored["evaluation"] = {
+            "decision": result.decision.value,
+            "reason": result.reason,
+        }
+
+    audit_logger.record_event(
+        decision="BLIND_EVALUATION",
+        reason=(
+            f"Commitment {commitment_id} evaluated; "
+            f"decision={result.decision.value}"
+        ),
+    )
+
+    return {
+        "commitment_id": commitment_id,
+        "status": "evaluated",
+        "decision": result.decision.value,
+    }
+
+
+@app.post(
+    "/commit-reveal/evaluate",
+    response_model=BlindEvaluationResponse,
+)
+def evaluate_committed_payload(
+    request: RevealRequest,
+) -> BlindEvaluationResponse:
+    """Verify a reveal and return the previously stored evaluation."""
+
+    with commit_reveal_lock:
+        stored = pending_commitments.get(request.commitment_id)
+
+        if stored is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Commitment not found or already revealed.",
+            )
+
+        if stored.get("evaluation") is None:
+            raise HTTPException(
+                status_code=409,
+                detail="Commitment must be evaluated before reveal.",
+            )
+
+        if (
+            request.payload != stored["payload"]
+            or request.nonce != stored["nonce"]
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail="Reveal does not match the committed payload.",
+            )
+
+        commitment_valid = verify_commitment(
+            request.payload,
+            request.nonce,
+            stored["commitment_hash"],
+        )
+
+        if not commitment_valid:
+            raise HTTPException(
+                status_code=400,
+                detail="Commitment verification failed.",
+            )
+
+        evaluation = stored["evaluation"]
+        commitment_hash = stored["commitment_hash"]
+
+        # Consume the commitment only after successful verification.
+        del pending_commitments[request.commitment_id]
+
+    audit_logger.record_event(
+        decision="REVEAL_VALID",
+        reason=f"Commitment {request.commitment_id} verified after evaluation",
+    )
+
+    return BlindEvaluationResponse(
+        commitment_id=request.commitment_id,
+        commitment_hash=commitment_hash,
+        decision=evaluation["decision"],
+        reason=evaluation["reason"],
+        commitment_valid=True,
+        evaluation_passed=True,
     )
