@@ -97,6 +97,52 @@ def inspect_with_blue_team(prompt: str) -> DetectionResult:
         reason=reason,
     )
 
+class ModelInferenceResponse(BaseModel):
+    response: str
+
+
+def request_model_inference(prompt: str) -> ModelInferenceResponse:
+    """Send an approved prompt to the Model Gateway."""
+
+    gateway_url = "http://model-gateway:8005/infer"
+
+    try:
+        response = httpx.post(
+            gateway_url,
+            json={"prompt": prompt},
+            timeout=15.0,
+        )
+        response.raise_for_status()
+
+    except httpx.TimeoutException as exc:
+        raise HTTPException(
+            status_code=504,
+            detail="Model Gateway timed out.",
+        ) from exc
+
+    except httpx.HTTPStatusError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="Model Gateway returned an unsuccessful response.",
+        ) from exc
+
+    except httpx.RequestError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Could not communicate with the Model Gateway.",
+        ) from exc
+
+    try:
+        return ModelInferenceResponse.model_validate(response.json())
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="Model Gateway returned an invalid response.",
+        ) from exc
+
+
+
+
 
 # Request and response schemas
 
@@ -111,6 +157,34 @@ class PromptRequest(BaseModel):
 class PromptInspectionResponse(BaseModel):
     decision: str
     reason: str
+
+
+class InferenceResponse(BaseModel):
+    decision: str
+    reason: str
+    response: str | None = None
+
+
+class AuditEventResponse(BaseModel):
+    sequence: int
+    event_id: str
+    timestamp: str
+    decision: str
+    reason: str
+    previous_hash: str
+    event_hash: str
+
+
+class AuditEventsResponse(BaseModel):
+    total: int
+    events: list[AuditEventResponse]
+
+
+class AuditVerificationResponse(BaseModel):
+    valid: bool
+    total_events: int
+
+
 
 
 class EvaluationCaseRequest(BaseModel):
@@ -155,6 +229,59 @@ def health_check() -> dict[str, str]:
     }
 
 
+# Read-only audit endpoints
+
+@app.get("/audit/events", response_model=AuditEventsResponse)
+def get_audit_events(
+    limit: int = 50,
+) -> AuditEventsResponse:
+    """Return the most recent audit events."""
+
+    if not 1 <= limit <= 500:
+        raise HTTPException(
+            status_code=422,
+            detail="Limit must be between 1 and 500.",
+        )
+
+    rows = audit_logger._connection.execute(
+        """
+        SELECT sequence, event_json
+        FROM audit_events
+        ORDER BY sequence DESC
+        LIMIT ?
+        """,
+        (limit,),
+    ).fetchall()
+
+    events = [
+        AuditEventResponse(
+            sequence=sequence,
+            **__import__("json").loads(event_json),
+        )
+        for sequence, event_json in rows
+    ]
+
+    return AuditEventsResponse(
+        total=len(events),
+        events=events,
+    )
+
+
+@app.get(
+    "/audit/verify",
+    response_model=AuditVerificationResponse,
+)
+def verify_audit_chain() -> AuditVerificationResponse:
+    """Verify the integrity of the complete audit chain."""
+
+    return AuditVerificationResponse(
+        valid=audit_logger.verify_chain(),
+        total_events=len(audit_logger.events),
+    )
+
+
+
+
 # Security inspection endpoint
 
 @app.post(
@@ -176,6 +303,41 @@ def inspect_prompt_endpoint(
     return PromptInspectionResponse(
         decision=result.decision.value,
         reason=result.reason,
+    )
+
+
+# Secure model inference endpoint
+
+@app.post("/inference", response_model=InferenceResponse)
+def secure_inference(
+    request: PromptRequest,
+) -> InferenceResponse:
+    """Inspect a prompt before allowing access to model inference."""
+
+    # Step 1: Ask the Blue Team to inspect the prompt.
+    result = inspect_with_blue_team(request.prompt)
+
+    # Step 2: Record the security decision.
+    audit_logger.record_event(
+        decision=result.decision.value,
+        reason=result.reason,
+    )
+
+    # Step 3: Block inference unless the decision is ALLOW.
+    if result.decision != SecurityDecision.ALLOW:
+        return InferenceResponse(
+            decision=result.decision.value,
+            reason=result.reason,
+            response=None,
+        )
+
+    # Step 4: Only approved prompts reach the Model Gateway.
+    model_result = request_model_inference(request.prompt)
+
+    return InferenceResponse(
+        decision=result.decision.value,
+        reason=result.reason,
+        response=model_result.response,
     )
 
 

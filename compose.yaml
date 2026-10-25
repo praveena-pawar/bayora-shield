@@ -1,4 +1,3 @@
-
 services:
   api:
     build:
@@ -14,6 +13,7 @@ services:
       - api_network
       - integration_network
       - blue_team_network
+      - api_gateway_network
     restart: unless-stopped
 
   red-team:
@@ -22,13 +22,6 @@ services:
       dockerfile: Dockerfile.redteam
     image: bayora-redteam:0.1.0
     container_name: bayora-redteam
-    command:
-      - uvicorn
-      - security.red_team_service:app
-      - --host
-      - 0.0.0.0
-      - --port
-      - "8002"
     ports:
       - "127.0.0.1:8002:8002"
     networks:
@@ -68,15 +61,69 @@ services:
     cpus: 0.50
     restart: unless-stopped
 
+  model-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile.gateway
+    image: bayora-gateway:0.1.0
+    container_name: bayora-model-gateway
+    environment:
+      MODEL_SERVICE_URL: http://model-service:8004
+    networks:
+      - api_gateway_network
+      - gateway_model_network
+    depends_on:
+      - model-service
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,noexec,nosuid
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    mem_limit: 256m
+    cpus: 0.50
+    restart: unless-stopped
+
+  model-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.model
+    image: bayora-model:0.1.0
+    container_name: bayora-model-service
+    networks:
+      - gateway_model_network
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,noexec,nosuid
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    mem_limit: 512m
+    cpus: 1.00
+    restart: unless-stopped
+
 volumes:
   bayora_audit_data:
 
 networks:
   api_network:
     internal: false
+
   red_team_network:
     internal: false
+
   integration_network:
     internal: true
+
   blue_team_network:
     internal: false
+
+  api_gateway_network:
+    internal: true
+
+  gateway_model_network:
+    internal: true
