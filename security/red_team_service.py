@@ -7,7 +7,6 @@ from security.red_team import (
     create_test_payload,
 )
 
-
 app = FastAPI(
     title="Bayora Red Team Service",
     description="Creates categorized security-testing payloads.",

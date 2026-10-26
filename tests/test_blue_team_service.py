@@ -3,7 +3,6 @@ from fastapi.testclient import TestClient
 
 from security.blue_team_service import app
 
-
 client = TestClient(app)
 
 

@@ -1,5 +1,5 @@
+from collections.abc import Callable
 from dataclasses import asdict, dataclass
-from typing import Callable
 
 from security.audit_logger import AuditLogger
 from security.prompt_detector import (
@@ -112,7 +112,7 @@ def run_validation() -> dict:
     for check in CHECKS:
         try:
             result = check()
-        except Exception as exc:
+        except (ValueError, TypeError, RuntimeError, OSError) as exc:
             result = ValidationResult(
                 check_name=check.__name__,
                 passed=False,

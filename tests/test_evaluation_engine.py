@@ -1,14 +1,16 @@
+from evaluator.evaluation_engine import (
+    EvaluationCase,
+    create_evaluation_cases,
+    evaluate_cases,
+)
 from security.audit_logger import AuditLogger
 from security.prompt_detector import SecurityDecision, inspect_prompt
-from evaluator.evaluation_engine import EvaluationCase, evaluate_cases
-
 from security.red_team import (
     AttackCategory,
     ExpectedDecision,
     create_test_payload,
 )
 
-from evaluator.evaluation_engine import create_evaluation_cases
 
 def test_normal_prompt_is_allowed():
     result = inspect_prompt("Explain how computer networks work.")

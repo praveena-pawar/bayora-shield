@@ -1,7 +1,6 @@
-from collections import defaultdict
-
 import json
-from datetime import datetime, timezone
+from collections import defaultdict
+from datetime import UTC, datetime
 from pathlib import Path
 
 from evaluator.evaluation_metrics import calculate_metrics
@@ -122,7 +121,7 @@ def main() -> None:
     report = {
         "project": "Bayora Shield",
         "evaluation_type": "holdout_candidate",
-        "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+        "timestamp_utc": datetime.now(UTC).isoformat(),
         "total_cases": summary["total_cases"],
         "correct_classifications": summary["correct"],
         "incorrect_classifications": summary["incorrect"],
@@ -143,7 +142,7 @@ def main() -> None:
     latest_report_path = report_directory / "holdout_evaluation.json"
     latest_report_path.write_text(report_json, encoding="utf-8")
 
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
     historical_report_path = (
         history_directory / f"holdout_evaluation_{timestamp}.json"
     )

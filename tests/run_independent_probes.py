@@ -1,4 +1,5 @@
 import sys
+
 from security.prompt_detector import inspect_prompt
 from tests.independent_adversarial_probes import INDEPENDENT_PROBES
 

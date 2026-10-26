@@ -2,7 +2,6 @@ from fastapi.testclient import TestClient
 
 from backend.main import app
 
-
 client = TestClient(app)
 
 
@@ -98,7 +97,7 @@ def test_red_team_evaluation_endpoint():
 
 
 def test_run_red_team_suite(monkeypatch):
-    import backend.main as main
+    from backend import main
 
     class MockResponse:
         def raise_for_status(self):
@@ -143,7 +142,8 @@ def test_run_red_team_suite(monkeypatch):
 
 def test_red_team_suite_timeout(monkeypatch):
     import httpx
-    import backend.main as main
+
+    from backend import main
 
     def raise_timeout(*args, **kwargs):
         raise httpx.TimeoutException("Red Team service timed out")
@@ -159,7 +159,8 @@ def test_red_team_suite_timeout(monkeypatch):
 
 def test_red_team_suite_connection_failure(monkeypatch):
     import httpx
-    import backend.main as main
+
+    from backend import main
 
     def raise_connection_error(*args, **kwargs):
         raise httpx.ConnectError("Red Team service is unavailable")
@@ -176,7 +177,7 @@ def test_red_team_suite_connection_failure(monkeypatch):
 
 
 def test_red_team_suite_invalid_json(monkeypatch):
-    import backend.main as main
+    from backend import main
 
     class InvalidJSONResponse:
         def raise_for_status(self):
@@ -202,7 +203,7 @@ def test_red_team_suite_invalid_json(monkeypatch):
 
 
 def test_red_team_suite_empty_payloads(monkeypatch):
-    import backend.main as main
+    from backend import main
 
     class EmptySuiteResponse:
         def raise_for_status(self):

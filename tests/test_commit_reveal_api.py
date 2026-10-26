@@ -6,7 +6,6 @@ from backend import main
 from backend.main import app, audit_logger
 from security.prompt_detector import DetectionResult, SecurityDecision
 
-
 client = TestClient(app)
 
 
@@ -234,3 +233,101 @@ def test_evaluate_rejects_unknown_commitment():
     )
 
     assert response.status_code == 404
+
+
+def test_reveal_before_evaluation_is_rejected():
+    payload = "Test payload"
+
+    commit_response = client.post(
+        "/commit-reveal/commit",
+        json={"payload": payload},
+    )
+
+    assert commit_response.status_code == 200
+
+    commitment_id = commit_response.json()["commitment_id"]
+    stored = main.pending_commitments[commitment_id]
+
+    response = client.post(
+        "/commit-reveal/evaluate",
+        json={
+            "commitment_id": commitment_id,
+            "payload": payload,
+            "nonce": stored["nonce"],
+        },
+    )
+
+    assert response.status_code == 409
+
+
+
+def test_repeated_evaluation_is_rejected():
+    payload = "Test payload"
+
+    commit_response = client.post(
+        "/commit-reveal/commit",
+        json={"payload": payload},
+    )
+    assert commit_response.status_code == 200
+
+    commitment_id = commit_response.json()["commitment_id"]
+
+    with patch(
+        "backend.main.inspect_with_blue_team",
+        return_value=DetectionResult(
+            decision=SecurityDecision.ALLOW,
+            reason="Test evaluation",
+        ),
+    ) as blue_team:
+        first_response = client.post(
+            "/commit-reveal/run-evaluation",
+            params={"commitment_id": commitment_id},
+        )
+
+        assert first_response.status_code == 200
+
+        second_response = client.post(
+            "/commit-reveal/run-evaluation",
+            params={"commitment_id": commitment_id},
+        )
+
+    assert second_response.status_code == 409
+    blue_team.assert_called_once_with(payload)
+
+
+
+def test_repeated_reveal_is_rejected():
+    payload = "Test payload"
+
+
+    commit_response = client.post(
+        "/commit-reveal/commit",
+        json={"payload": payload},
+    )
+    assert commit_response.status_code == 200
+
+    commitment_id = commit_response.json()["commitment_id"]
+    stored = main.pending_commitments[commitment_id]
+    nonce = stored["nonce"]
+
+    first_response = client.post(
+        "/commit-reveal/verify",
+        json={
+            "commitment_id": commitment_id,
+            "payload": payload,
+            "nonce": nonce,
+        },
+    )
+    assert first_response.status_code == 200
+    assert first_response.json()["valid"] is True
+
+    second_response = client.post(
+        "/commit-reveal/verify",
+        json={
+            "commitment_id": commitment_id,
+            "payload": payload,
+            "nonce": nonce,
+        },
+    )
+
+    assert second_response.status_code == 404

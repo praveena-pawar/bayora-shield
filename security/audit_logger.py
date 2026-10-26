@@ -2,12 +2,10 @@ import hashlib
 import json
 import sqlite3
 import threading
-
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
-
 
 GENESIS_HASH = "0" * 64
 

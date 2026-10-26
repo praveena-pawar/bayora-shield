@@ -1,6 +1,7 @@
 import json
 import sys
-from pathlib import Path    
+from pathlib import Path
+
 
 def load_report(report_path: Path) -> dict:
     """Load an evaluation report from a JSON file."""

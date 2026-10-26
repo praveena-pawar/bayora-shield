@@ -4,7 +4,6 @@ from pydantic import BaseModel, Field
 
 from security.prompt_detector import inspect_prompt
 
-
 app = FastAPI(
     title="Bayora Blue Team Service",
     description="Defensive prompt inspection service for controlled security evaluation.",

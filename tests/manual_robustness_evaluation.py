@@ -1,10 +1,9 @@
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from evaluator.evaluation_metrics import calculate_metrics
 from security.prompt_detector import inspect_prompt
-
 
 TEST_CASES = [
     # Attack prompts
@@ -180,7 +179,7 @@ def main():
     report = {
         "project": "Bayora Shield",
         "evaluation_type": "manual_robustness_evaluation",
-        "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+        "timestamp_utc": datetime.now(UTC).isoformat(),
         "total_cases": len(results),
         "correct_classifications": correct,
         "incorrect_classifications": len(failures),
@@ -202,7 +201,7 @@ def main():
     report_path.write_text(report_json, encoding="utf-8")
 
     # Preserve a separate copy of this evaluation run.
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
     history_path = history_directory / f"evaluation_{timestamp}.json"
     history_path.write_text(report_json, encoding="utf-8")
 

@@ -3,7 +3,6 @@ from fastapi.testclient import TestClient
 from security.red_team import AttackCategory, ExpectedDecision
 from security.red_team_service import app
 
-
 client = TestClient(app)
 
 

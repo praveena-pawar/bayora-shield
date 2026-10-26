@@ -1,10 +1,9 @@
 from dataclasses import asdict, dataclass
 
-from security.red_team import RedTeamPayload
-
+from evaluator.evaluation_metrics import calculate_metrics
 from security.audit_logger import AuditLogger
 from security.prompt_detector import inspect_prompt
-from evaluator.evaluation_metrics import calculate_metrics
+from security.red_team import RedTeamPayload
 
 
 @dataclass(frozen=True)

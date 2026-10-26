@@ -1,40 +1,32 @@
+import secrets
+import threading
+from pathlib import Path
+
+import httpx
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
+
 from evaluator.evaluation_engine import (
     EvaluationCase,
     create_evaluation_cases,
     evaluate_cases,
+)
+from evaluator.security_validator import run_validation
+from security.audit_logger import AuditLogger
+from security.commit_reveal import (
+    create_commitment,
+    verify_commitment,
+)
+from security.prompt_detector import (
+    DetectionResult,
+    SecurityDecision,
+    inspect_prompt,
 )
 from security.red_team import (
     AttackCategory,
     ExpectedDecision,
     create_test_payload,
 )
-
-import secrets
-import threading
-
-from security.commit_reveal import (
-    create_commitment,
-    verify_commitment,
-)
-
-
-import httpx
-from fastapi import HTTPException
-
-
-from pathlib import Path
-from fastapi import FastAPI
-from pydantic import BaseModel, Field
-
-from evaluator.evaluation_engine import EvaluationCase, evaluate_cases
-from evaluator.security_validator import run_validation
-from security.audit_logger import AuditLogger
-from security.prompt_detector import (
-    DetectionResult,
-    SecurityDecision,
-    inspect_prompt,
-)
-
 
 app = FastAPI(
     title="Bayora Shield",
@@ -91,7 +83,7 @@ def inspect_with_blue_team(prompt: str) -> DetectionResult:
         reason = data["reason"]
 
         if not isinstance(reason, str):
-            raise ValueError("Invalid reason")
+            raise TypeError("Invalid reason")
 
     except (KeyError, TypeError, ValueError) as exc:
         raise HTTPException(
@@ -621,6 +613,7 @@ def reveal_payload(request: RevealRequest) -> RevealResponse:
 
 
 
+
 @app.post("/commit-reveal/run-evaluation")
 def run_commit_reveal_evaluation(
     commitment_id: str,
@@ -636,16 +629,36 @@ def run_commit_reveal_evaluation(
                 detail="Commitment not found or already revealed.",
             )
 
-        if stored.get("evaluation") is not None:
+        if stored.get("evaluation_in_progress", False):
             raise HTTPException(
                 status_code=409,
-                detail="This commitment has already been evaluated.",
+                detail="Cannot reveal while evaluation is in progress.",
             )
 
+        if (
+            stored.get("evaluation") is not None
+            or stored.get("evaluation_in_progress", False)
+        ):
+            raise HTTPException(
+                status_code=409,
+                detail="This commitment has already been evaluated or is being evaluated.",
+            )
+
+        # Reserve this commitment to prevent concurrent evaluations.
+        stored["evaluation_in_progress"] = True
         payload = stored["payload"]
 
-    # Do not hold the lock while making a network request.
-    result = inspect_with_blue_team(payload)
+    try:
+        # Do not hold the lock during the network request.
+        result = inspect_with_blue_team(payload)
+
+    except Exception:
+        # Allow a retry if the evaluation fails.
+        with commit_reveal_lock:
+            stored = pending_commitments.get(commitment_id)
+            if stored is not None:
+                stored["evaluation_in_progress"] = False
+        raise
 
     with commit_reveal_lock:
         stored = pending_commitments.get(commitment_id)
@@ -660,6 +673,7 @@ def run_commit_reveal_evaluation(
             "decision": result.decision.value,
             "reason": result.reason,
         }
+        stored["evaluation_in_progress"] = False
 
     audit_logger.record_event(
         decision="BLIND_EVALUATION",
@@ -674,6 +688,7 @@ def run_commit_reveal_evaluation(
         "status": "evaluated",
         "decision": result.decision.value,
     }
+
 
 
 @app.post(

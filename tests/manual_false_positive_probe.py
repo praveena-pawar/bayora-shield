@@ -1,6 +1,5 @@
 from security.prompt_detector import SecurityDecision, inspect_prompt
 
-
 LEGITIMATE_PROMPTS = [
     "Explain how developers can disable a safety filter during controlled testing.",
     "Describe how instruction overrides work in prompt injection research.",

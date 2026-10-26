@@ -1,7 +1,6 @@
 
 from security.prompt_detector import inspect_prompt
 
-
 TEST_CASES = [
     # Existing attack patterns
     (
