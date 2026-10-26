@@ -1,10 +1,19 @@
 import { useEffect, useState } from "react";
 
 import {
-getHealth,
-runRedTeamSuite,
-runBlueTeamSuite,
-type HealthResponse,
+  getHealth,
+  runRedTeamSuite,
+  runBlueTeamSuite,
+  createCommitment,
+  runBlindEvaluation,
+  revealEvaluation,
+  getAuditEvents,
+  verifyAuditChain,
+  type HealthResponse,
+  type CommitResponse,
+  type BlindEvaluationResponse,
+  type RevealEvaluationResponse,
+  type AuditEvent,
 } from "./api";
 
 import "./App.css";
@@ -37,6 +46,20 @@ const [redTeamError, setRedTeamError] = useState<string | null>(null);
 const [blueTeamLoading, setBlueTeamLoading] = useState(false);
 const [blueTeamResult, setBlueTeamResult] = useState<unknown>(null);
 const [blueTeamError, setBlueTeamError] = useState<string | null>(null);
+
+const [commitPayload, setCommitPayload] = useState("");
+const [commitResult, setCommitResult] = useState<CommitResponse | null>(null);
+const [blindResult, setBlindResult] = useState<BlindEvaluationResponse | null>(null);
+const [revealResult, setRevealResult] = useState<RevealEvaluationResponse | null>(null);
+const [commitLoading, setCommitLoading] = useState(false);
+const [commitError, setCommitError] = useState<string | null>(null);
+
+
+const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
+const [auditTotal, setAuditTotal] = useState(0);
+const [auditLoading, setAuditLoading] = useState(false);
+const [auditError, setAuditError] = useState<string | null>(null);
+const [auditVerification, setAuditVerification] = useState<unknown>(null);
 
 
 useEffect(() => {
@@ -107,6 +130,112 @@ error instanceof Error ? error.message : "Unknown error",
 setBlueTeamLoading(false);
 }
 }
+
+
+
+async function handleCreateCommitment() {
+  if (!commitPayload.trim()) {
+    setCommitError("Please enter a payload first.");
+    return;
+  }
+
+  setCommitLoading(true);
+  setCommitError(null);
+  setCommitResult(null);
+  setBlindResult(null);
+  setRevealResult(null);
+
+  try {
+    const result = await createCommitment(commitPayload);
+    setCommitResult(result);
+  } catch (error) {
+    setCommitError(
+      error instanceof Error ? error.message : "Commitment creation failed.",
+    );
+  } finally {
+    setCommitLoading(false);
+  }
+}
+
+async function handleRunBlindEvaluation() {
+  if (!commitResult) return;
+
+  setCommitLoading(true);
+  setCommitError(null);
+
+  try {
+    const result = await runBlindEvaluation(commitResult.commitment_id);
+    setBlindResult(result);
+  } catch (error) {
+    setCommitError(
+      error instanceof Error ? error.message : "Blind evaluation failed.",
+    );
+  } finally {
+    setCommitLoading(false);
+  }
+}
+
+async function handleRevealEvaluation() {
+  if (!commitResult) return;
+
+  setCommitLoading(true);
+  setCommitError(null);
+
+  try {
+    const result = await revealEvaluation(
+      commitResult.commitment_id,
+      commitPayload,
+      commitResult.nonce,
+    );
+    setRevealResult(result);
+  } catch (error) {
+    setCommitError(
+      error instanceof Error ? error.message : "Reveal verification failed.",
+    );
+  } finally {
+    setCommitLoading(false);
+  }
+}
+
+
+async function handleLoadAuditEvents() {
+  setAuditLoading(true);
+  setAuditError(null);
+
+  try {
+    const result = await getAuditEvents();
+    setAuditEvents(result.events);
+    setAuditTotal(result.total);
+  } catch (error) {
+    setAuditError(
+      error instanceof Error ? error.message : "Failed to load audit events.",
+    );
+  } finally {
+    setAuditLoading(false);
+  }
+}
+
+async function handleVerifyAuditChain() {
+  setAuditLoading(true);
+  setAuditError(null);
+  setAuditVerification(null);
+
+  try {
+    const result = await verifyAuditChain();
+    setAuditVerification(result);
+
+    const auditData = await getAuditEvents();
+    setAuditEvents(auditData.events);
+    setAuditTotal(auditData.total);
+  }catch (error) {
+    setAuditError(
+      error instanceof Error ? error.message : "Audit verification failed.",
+    );
+  } finally {
+    setAuditLoading(false);
+  }
+}
+
 
 
 return ( <div className="app-shell"> <aside className="sidebar"> <div className="brand"> <div className="brand-mark">B</div> <div> <h1>
@@ -908,15 +1037,165 @@ BAYORA<span>.</span> </h1> <p>AI SECURITY PLATFORM</p> </div> </div>
           <h3>{activePage}</h3>
 
           <p>
-            This workspace is awaiting integration with the existing
-            FastAPI backend. Live results will appear here when the
-            corresponding API workflow is connected.
+            Create a payload commitment, run a blind security evaluation,
+            and verify the revealed payload against the original commitment.
           </p>
 
-          <div className="placeholder-status">
-            <span className="status-dot muted" />
-            Backend integration pending
-          </div>
+          {activePage === "Audit Explorer" ? (
+            <section className="module-placeholder">
+              <div className="placeholder-icon">🔍</div>
+              <span className="eyebrow">BAYORA SHIELD SECURITY</span>
+              <h3>Audit Explorer</h3>
+              <p>
+                Inspect security events, review recorded decisions, and verify
+                the integrity of the audit chain.
+              </p>
+
+              <div className="result-container">
+                <h4>Audit Log</h4>
+
+                <button
+                  className="back-button run-button"
+                  onClick={handleLoadAuditEvents}
+                  disabled={auditLoading}
+                >
+                  {auditLoading ? "Loading..." : "Load Audit Events"}
+                </button>
+
+                <button
+                  className="back-button"
+                  onClick={handleVerifyAuditChain}
+                  disabled={auditLoading}
+                >
+                  {auditLoading ? "Verifying..." : "Verify Audit Chain"}
+                </button>
+
+                {auditError && (
+                  <p role="alert" className="error-message">
+                    {auditError}
+                  </p>
+                )}
+
+                <p>Total recorded events: {auditTotal}</p>
+
+                {auditEvents.map((event) => (
+                  <article className="audit-event" key={event.event_id}>
+                    <h4>
+                      Event #{event.sequence} — {event.decision}
+                    </h4>
+                    <p>{event.reason}</p>
+                    <small>{new Date(event.timestamp).toLocaleString()}</small>
+                    <details>
+                      <summary>View integrity details</summary>
+                      <p>Event ID: {event.event_id}</p>
+                      <p>Previous hash: {event.previous_hash}</p>
+                      <p>Event hash: {event.event_hash}</p>
+                    </details>
+                  </article>
+                ))}
+
+                {auditVerification !== null && (
+                  <div>
+                    <h4>Audit Chain Verification Result</h4>
+                    <pre>
+                      {JSON.stringify(auditVerification, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </div>
+
+              <button
+                className="back-button"
+                onClick={() => setActivePage("Overview")}
+              >
+                ← Return to overview
+              </button>
+            </section>
+          ) : activePage === "Commit-Reveal" ? (
+            <div className="result-container">
+              <h4>Commit-Reveal Workflow</h4>
+
+              <label htmlFor="commit-payload">Payload to evaluate</label>
+              <textarea
+                id="commit-payload"
+                value={commitPayload}
+                onChange={(event) => setCommitPayload(event.target.value)}
+                placeholder="Enter a test payload..."
+                rows={4}
+                maxLength={10000}
+                disabled={commitLoading || commitResult !== null}
+              />
+
+              <button
+                className="back-button run-button"
+                onClick={handleCreateCommitment}
+                disabled={commitLoading || !commitPayload.trim() || commitResult !== null}
+              >
+                {commitLoading ? "Processing..." : "1. Create Commitment"}
+              </button>
+
+              {commitResult && (
+                <>
+                  <h4>Commitment Created</h4>
+                  <p><strong>Commitment ID:</strong> {commitResult.commitment_id}</p>
+                  <p><strong>Commitment Hash:</strong></p>
+                  <code>{commitResult.commitment_hash}</code>
+
+                  <button
+                    className="back-button run-button"
+                    onClick={handleRunBlindEvaluation}
+                    disabled={commitLoading || blindResult !== null}
+                  >
+                    2. Run Blind Evaluation
+                  </button>
+                </>
+              )}
+
+              {blindResult && (
+                <>
+                  <h4>Blind Evaluation</h4>
+                  <p><strong>Status:</strong> {blindResult.status}</p>
+                  <p><strong>Decision:</strong> {blindResult.decision}</p>
+
+                  <button
+                    className="back-button run-button"
+                    onClick={handleRevealEvaluation}
+                    disabled={commitLoading || revealResult !== null}
+                  >
+                    3. Verify Reveal
+                  </button>
+                </>
+              )}
+
+              {revealResult && (
+                <>
+                  <h4>Final Verification</h4>
+                  <p><strong>Decision:</strong> {revealResult.decision}</p>
+                  <p><strong>Reason:</strong> {revealResult.reason}</p>
+                  <p>
+                    <strong>Commitment valid:</strong>{" "}
+                    {revealResult.commitment_valid ? "Yes" : "No"}
+                  </p>
+                  <p>
+                    <strong>Evaluation completed:</strong>{" "}
+                    {revealResult.evaluation_passed ? "Yes" : "No"}
+                  </p>
+                </>
+              )}
+
+              {commitError && (
+                <div className="result-error">
+                  <strong>Workflow error</strong>
+                  <pre>{commitError}</pre>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="placeholder-status">
+              <span className="status-dot muted" />
+              Backend integration pending
+            </div>
+          )}
 
           <button
             className="back-button"

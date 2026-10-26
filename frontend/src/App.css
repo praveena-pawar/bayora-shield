@@ -1131,3 +1131,112 @@ line-height: 1.6;
 grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 }
+
+
+
+
+/* Commit-Reveal form layout */
+#commit-payload {
+  display: block;
+  width: 100%;
+  min-height: 120px;
+  box-sizing: border-box;
+  margin: 12px 0 16px;
+  padding: 12px;
+  color: #f1f5f9;
+  background: #0b1016;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  font: inherit;
+  resize: vertical;
+}
+
+#commit-payload:focus {
+  outline: 2px solid #34d399;
+  outline-offset: 2px;
+}
+
+.result-container label {
+  display: block;
+  margin-top: 16px;
+  font-weight: 600;
+}
+
+.result-container button {
+  margin-top: 12px;
+}
+
+
+
+
+/* Audit Explorer */
+.audit-event {
+  margin-top: 16px;
+  padding: 18px;
+  background: #0b1016;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  overflow-wrap: anywhere;
+}
+
+.audit-event h4 {
+  margin: 0 0 10px;
+  color: #34d399;
+}
+
+.audit-event p {
+  margin: 8px 0;
+  line-height: 1.6;
+  color: #cbd5e1;
+}
+
+.audit-event small {
+  display: block;
+  margin-top: 8px;
+  color: #94a3b8;
+}
+
+.audit-event details {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #334155;
+}
+
+.audit-event summary {
+  cursor: pointer;
+  color: #34d399;
+  font-weight: 600;
+}
+
+.audit-event summary:hover {
+  color: #6ee7b7;
+}
+
+.result-container pre {
+  max-width: 100%;
+  padding: 14px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: #0b1016;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  color: #cbd5e1;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.error-message {
+  padding: 12px;
+  color: #fecaca;
+  background: #451a1a;
+  border: 1px solid #991b1b;
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+}
+
+.audit-event button:focus-visible,
+.audit-event summary:focus-visible {
+  outline: 2px solid #34d399;
+  outline-offset: 3px;
+}
