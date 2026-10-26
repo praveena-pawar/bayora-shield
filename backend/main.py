@@ -2,6 +2,8 @@ import secrets
 import threading
 from pathlib import Path
 
+from fastapi.middleware.cors import CORSMiddleware
+
 import httpx
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
@@ -37,6 +39,16 @@ app = FastAPI(
     version="0.3.0",
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:5174",
+    ],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -222,6 +234,7 @@ class CommitRequest(BaseModel):
 class CommitResponse(BaseModel):
     commitment_id: str
     commitment_hash: str
+    nonce: str
     status: str
 
 
@@ -567,6 +580,7 @@ def commit_payload(request: CommitRequest) -> CommitResponse:
     return CommitResponse(
         commitment_id=commitment_id,
         commitment_hash=commitment.commitment_hash,
+        nonce=commitment.nonce,
         status="committed",
     )
 
