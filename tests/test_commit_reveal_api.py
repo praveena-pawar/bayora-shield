@@ -2,6 +2,9 @@ from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
+from concurrent.futures import ThreadPoolExecutor
+from threading import Event
+
 from backend import main
 from backend.main import app, audit_logger
 from security.prompt_detector import DetectionResult, SecurityDecision
@@ -331,3 +334,53 @@ def test_repeated_reveal_is_rejected():
     )
 
     assert second_response.status_code == 404
+
+
+def test_concurrent_evaluations_only_evaluate_once():
+    payload = "Test concurrent evaluation"
+
+    commit_response = client.post(
+        "/commit-reveal/commit",
+        json={"payload": payload},
+    )
+    assert commit_response.status_code == 200
+
+    commitment_id = commit_response.json()["commitment_id"]
+
+    evaluation_started = Event()
+    allow_evaluation_to_finish = Event()
+
+    def slow_blue_team(prompt):
+        evaluation_started.set()
+        assert allow_evaluation_to_finish.wait(timeout=5)
+        return DetectionResult(
+            decision=SecurityDecision.ALLOW,
+            reason="Concurrency test",
+        )
+
+    with patch(
+        "backend.main.inspect_with_blue_team",
+        side_effect=slow_blue_team,
+    ) as blue_team:
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            first_request = executor.submit(
+                client.post,
+                "/commit-reveal/run-evaluation",
+                params={"commitment_id": commitment_id},
+            )
+
+            try:
+                assert evaluation_started.wait(timeout=5)
+
+                second_response = client.post(
+                    "/commit-reveal/run-evaluation",
+                    params={"commitment_id": commitment_id},
+                )
+            finally:
+                allow_evaluation_to_finish.set()
+
+            first_response = first_request.result(timeout=5)
+
+    assert first_response.status_code == 200
+    assert second_response.status_code == 409
+    blue_team.assert_called_once_with(payload)
