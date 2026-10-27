@@ -2,6 +2,8 @@ import secrets
 import threading
 from pathlib import Path
 
+import os
+
 from fastapi.middleware.cors import CORSMiddleware
 
 import httpx
@@ -61,7 +63,10 @@ audit_logger = AuditLogger(db_path=str(DATABASE_PATH))
 def inspect_with_blue_team(prompt: str) -> DetectionResult:
     """Send a prompt to the separate Blue Team service."""
 
-    blue_team_url = "http://blue-team:8003/defend"
+    blue_team_url = os.getenv(
+        "BLUE_TEAM_URL",
+        "http://blue-team:8003",
+    ).rstrip("/") + "/defend"
 
     try:
         response = httpx.post(
@@ -115,7 +120,10 @@ class ModelInferenceResponse(BaseModel):
 def request_model_inference(prompt: str) -> ModelInferenceResponse:
     """Send an approved prompt to the Model Gateway."""
 
-    gateway_url = "http://model-gateway:8005/infer"
+    gateway_url = os.getenv(
+        "MODEL_GATEWAY_URL",
+        "http://model-gateway:8005/infer",
+    ).rstrip("/") + "/infer"
 
     try:
         response = httpx.post(
@@ -234,7 +242,6 @@ class CommitRequest(BaseModel):
 class CommitResponse(BaseModel):
     commitment_id: str
     commitment_hash: str
-    nonce: str
     status: str
 
 
@@ -438,7 +445,10 @@ def run_red_team_evaluation(
 @app.post("/evaluation/run-red-team-suite")
 def run_red_team_suite() -> dict:
     """Fetch the Red Team suite and evaluate it through the existing engine."""
-    red_team_url = "http://red-team:8002/test-suite"
+    red_team_url = os.getenv(
+        "RED_TEAM_URL",
+        "http://red-team:8002",
+    ).rstrip("/") + "/test-suite"
 
     try:
         response = httpx.get(red_team_url, timeout=5.0)
@@ -580,7 +590,6 @@ def commit_payload(request: CommitRequest) -> CommitResponse:
     return CommitResponse(
         commitment_id=commitment_id,
         commitment_hash=commitment.commitment_hash,
-        nonce=commitment.nonce,
         status="committed",
     )
 
@@ -688,6 +697,7 @@ def run_commit_reveal_evaluation(
             "reason": result.reason,
         }
         stored["evaluation_in_progress"] = False
+        nonce = stored["nonce"]
 
     audit_logger.record_event(
         decision="BLIND_EVALUATION",
@@ -701,6 +711,7 @@ def run_commit_reveal_evaluation(
         "commitment_id": commitment_id,
         "status": "evaluated",
         "decision": result.decision.value,
+        "nonce": nonce,
     }
 
 

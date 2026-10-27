@@ -59,7 +59,6 @@ return data;
 export interface CommitResponse {
   commitment_id: string;
   commitment_hash: string;
-  nonce: string;
   status: string;
 }
 
@@ -67,6 +66,7 @@ export interface BlindEvaluationResponse {
   commitment_id: string;
   status: string;
   decision: string;
+  nonce: string;
 }
 
 export interface RevealEvaluationResponse {

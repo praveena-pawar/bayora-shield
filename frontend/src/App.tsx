@@ -158,7 +158,7 @@ async function handleCreateCommitment() {
 }
 
 async function handleRunBlindEvaluation() {
-  if (!commitResult) return;
+  if (!commitResult || !blindResult) return;
 
   setCommitLoading(true);
   setCommitError(null);
@@ -185,7 +185,7 @@ async function handleRevealEvaluation() {
     const result = await revealEvaluation(
       commitResult.commitment_id,
       commitPayload,
-      commitResult.nonce,
+      blindResult!.nonce,
     );
     setRevealResult(result);
   } catch (error) {
