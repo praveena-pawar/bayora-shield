@@ -2,22 +2,33 @@
 
 ### Secure Infrastructure for Adversarial AI Safety Testing
 
-**Bayora Shield is an AI security testing platform designed to support controlled adversarial testing, defensive evaluation, and auditable security assessments of AI systems.**
+**Bayora Shield is an AI security testing platform prototype designed to support controlled adversarial testing, defensive evaluation, and auditable security assessments of AI systems.**
 
-The project explores how Red Team and Blue Team components can operate within a controlled testing architecture, helping teams identify potential AI security weaknesses while maintaining a structured evaluation process.
+Built for **Hack in Hills '26 — Challenge 04: Securing Adversarial AI Safety Testing Infrastructure**.
 
-Built for **Hack in Hills '26 — Challenge 04: Securing Adversarial AI Safety Testing Infrastructure.**
+> **Project Status:** Working demonstration prototype. Security guarantees are limited to implemented controls and tested scenarios. This project is not a production-certified security platform.
 
 ---
 
-## 📌 Table of Contents
+## 🌐 Project Links
 
-* [The Problem](#-the-problem)
+* **Live Demo:** https://bayora-shield.vercel.app/
+* **GitHub Repository:** https://github.com/praveena-pawar/bayora-shield
+* **API Health Check:** https://barbie-nothing-gary-solomon.trycloudflare.com/health
+* **API Documentation:** https://barbie-nothing-gary-solomon.trycloudflare.com/docs
+
+> **Demo Availability:** The frontend is hosted on Vercel, while the backend currently runs locally and is exposed through a temporary Cloudflare Tunnel. The backend depends on the host computer, Docker services, internet connectivity, and the tunnel remaining available. The tunnel URL may change.
+
+---
+
+## 📑 Table of Contents
+
+* [Problem Statement](#-problem-statement)
 * [Our Solution](#-our-solution)
 * [Key Features](#-key-features)
 * [System Architecture](#-system-architecture)
 * [Security Design](#-security-design)
-* [Commit-Reveal Evaluation](#-commit-reveal-evaluation)
+* [Commit-Reveal Workflow](#-commit-reveal-workflow)
 * [Technology Stack](#-technology-stack)
 * [Getting Started](#-getting-started)
 * [API Endpoints](#-api-endpoints)
@@ -29,109 +40,106 @@ Built for **Hack in Hills '26 — Challenge 04: Securing Adversarial AI Safety T
 
 ---
 
-## 🎯 The Problem
+## 🎯 Problem Statement
 
-AI safety testing often requires security researchers to simulate adversarial inputs, evaluate defensive mechanisms, and analyze the behavior of AI-powered systems.
+Adversarial AI security testing requires an environment where attacks can be evaluated, defensive mechanisms can be assessed, and the resulting evidence can be inspected.
 
-However, an AI security testing environment must address several challenges:
+However, a poorly isolated testing environment can introduce additional risks:
 
-* **Isolation:** Adversarial testing components should not have unrestricted access to defensive systems.
-* **Controlled evaluation:** Testing workflows should follow defined evaluation procedures.
-* **Auditability:** Security-related activities should be recorded and their integrity verifiable.
-* **Evaluation integrity:** The system should support workflows that separate an evaluation commitment from the subsequent reveal of evaluation inputs.
-* **Defensive assessment:** Security teams need a structured way to evaluate detection and defense mechanisms.
+* **Payload Exposure:** Adversarial inputs may become visible to defensive components prematurely.
+* **Cross-Service Access:** Testing components may gain unintended access to other services.
+* **Context Contamination:** Data from one evaluation may affect another.
+* **Resource Contention:** Uncontrolled resource usage can interfere with evaluation results.
+* **Audit Integrity Risks:** Evaluation records may be modified without reliable detection.
+* **Unreliable Evaluation:** Environmental weaknesses can undermine the validity of security results.
 
-Without careful architectural controls, an adversarial testing environment can itself become a security risk.
+Bayora Shield explores how service separation, controlled evaluation workflows, and audit verification can help address these challenges.
+
+---
 
 ## 💡 Our Solution
 
-Bayora Shield provides a modular backend for orchestrating AI security evaluations.
+Bayora Shield provides a modular architecture for coordinating AI security evaluations.
 
-It separates major responsibilities into dedicated services:
+The system separates responsibilities across several services:
 
-* **Red Team:** Supplies adversarial test cases and testing suites.
-* **Blue Team:** Evaluates incoming inputs using defensive inspection logic.
-* **API Backend:** Coordinates requests, evaluation workflows, audit operations, and Commit-Reveal interactions.
-* **Model Gateway:** Provides an intermediary between the API and model-serving infrastructure.
-* **Model Service:** Hosts the model-facing service component.
+* **Red Team:** Executes the available adversarial test cases and test suites.
+* **Blue Team:** Performs defensive inspection using the implemented security logic.
+* **FastAPI Backend:** Coordinates evaluation workflows, security operations, and audit functionality.
+* **Model Gateway:** Acts as an intermediary for model-related requests.
+* **Model Service:** Provides the model-facing service component.
+* **Web Dashboard:** Presents the available testing and evaluation workflows.
 
-The architecture is designed to support controlled testing and improve the traceability of security evaluations.
-
-> **Project goal:** Build a practical foundation for safer, more controlled, and more auditable AI security testing.
+The goal is to make AI security testing more structured, observable, and auditable.
 
 ---
 
 ## ✨ Key Features
 
-### 1. Red Team Testing
+### 🔴 1. Red Team Testing
 
-The Red Team component provides adversarial test cases for evaluating AI security defenses.
+The Red Team component provides adversarial testing capabilities.
 
-Capabilities include:
+Features include:
 
-* Individual adversarial evaluations.
-* Red Team test-suite execution.
-* Integration with the API evaluation workflow.
+* Execution of the available Red Team test suite.
+* Evaluation of implemented adversarial test cases.
+* Integration with backend evaluation workflows.
+* Results that help assess the implemented defensive mechanisms.
 
-### 2. Blue Team Defense
+The current dashboard supports the available testing workflows. Arbitrary user-supplied Red Team payloads should not be considered supported unless that capability is implemented and verified.
 
-The Blue Team component performs defensive inspection of incoming inputs.
+### 🔵 2. Blue Team Defensive Evaluation
 
-Capabilities include:
+The Blue Team component evaluates inputs using the implemented defensive inspection logic.
 
-* Input inspection.
-* Security validation workflows.
-* Blue Team test-suite execution.
-* Integration with the backend evaluation process.
+Features include:
 
-Detection results should be interpreted within the scope of the implemented test cases and supported defensive logic.
+* Execution of the available Blue Team test suite.
+* Defensive evaluation results.
+* Integration with backend security workflows.
+* Evaluation of the implemented detection mechanisms.
 
-### 3. Modular Service Architecture
+**Note:** Results apply to the tested cases and implemented detection logic. They do not guarantee detection of every real-world attack.
 
-Bayora Shield separates application responsibilities across multiple services.
+### 🔐 3. Commit-Reveal Workflow
 
-This separation supports independent development, clearer service boundaries, and more controlled communication between components.
-
-### 4. Audit Logging and Integrity Verification
-
-The platform includes audit-related endpoints for retrieving recorded events and checking audit integrity.
-
-Available operations include:
-
-* Retrieving audit events.
-* Verifying audit records.
-* Supporting traceability during security evaluations.
-
-Audit integrity verification does not, by itself, establish that every event is complete, authentic, or tamper-proof against an attacker with sufficient privileges.
-
-### 5. Commit-Reveal Evaluation
-
-Bayora Shield implements a Commit-Reveal workflow designed to separate commitment to evaluation data from its subsequent reveal and verification.
+The Commit-Reveal workflow separates the creation of a commitment from the later reveal and verification of an evaluation payload.
 
 The workflow supports:
 
 1. Creating a commitment.
-2. Performing a blind evaluation.
+2. Running blind evaluation.
 3. Revealing the evaluation payload.
 4. Verifying the payload against the commitment.
-5. Rejecting invalid or conflicting evaluation operations.
+5. Accepting or rejecting operations according to the implemented verification logic.
 
-The backend includes concurrency handling intended to prevent the same pending evaluation from being processed simultaneously more than once.
+The current implementation stores pending Commit-Reveal state in application memory. Pending operations may be lost if the API process restarts.
 
-**Important:** The current implementation stores pending Commit-Reveal state in memory. Durable storage and recovery across service restarts remain future improvements.
+### 📋 4. Audit Explorer
 
-### 6. Containerized Services
+The Audit Explorer provides access to available audit records and integrity checks.
 
-The project uses Docker-based service deployment.
+Features include:
 
-Configured container hardening measures include:
+* Retrieving audit events.
+* Verifying audit integrity.
+* Inspecting records associated with evaluation activity.
 
-* Read-only root filesystems for Red Team and Blue Team containers.
+Audit verification can identify changes that violate the implemented verification scheme. It does not independently guarantee that every event is complete or protect against all privileged attacks.
+
+### 🐳 5. Containerized Service Architecture
+
+The project uses Docker and Docker Compose to run its services.
+
+The current configuration includes selected hardening measures for Red Team and Blue Team containers, including:
+
+* Read-only root filesystems.
 * Dropped Linux capabilities.
 * No-new-privileges settings.
-* Temporary filesystems for `/tmp`.
+* Temporary filesystems.
 * Resource limits.
-* Loopback-only host bindings for the Red Team and Blue Team services.
+* Loopback-only host bindings for their published ports.
 
 These controls reduce selected risks but do not guarantee complete isolation.
 
@@ -140,136 +148,124 @@ These controls reduce selected risks but do not guarantee complete isolation.
 ## 🏗️ System Architecture
 
 ```text
-                   ┌──────────────────────────┐
-                   │       User / Client      │
-                   └────────────┬─────────────┘
-                                │
-                                ▼
-                   ┌──────────────────────────┐
-                   │      FastAPI Backend     │
-                   │                          │
-                   │  API Orchestration       │
-                   │  Security Validation     │
-                   │  Evaluation Workflows    │
-                   │  Audit Operations        │
-                   │  Commit-Reveal           │
-                   └──────┬──────────┬────────┘
-                          │          │
-                ┌─────────┘          └─────────┐
-                ▼                              ▼
-    ┌─────────────────────┐        ┌─────────────────────┐
-    │     Red Team        │        │     Blue Team       │
-    │                     │        │                     │
-    │ Adversarial Tests   │        │ Defensive Inspection│
-    │ Test Suites         │        │ Security Evaluation │
-    └─────────────────────┘        └─────────────────────┘
-
-                   Model Interaction Path
-                              │
-                              ▼
-                   ┌──────────────────────────┐
-                   │       Model Gateway      │
-                   └────────────┬─────────────┘
-                                │
-                                ▼
-                   ┌──────────────────────────┐
-                   │       Model Service      │
-                   └──────────────────────────┘
+                    Browser / User
+                          |
+                          v
+                  Web Dashboard (Vite)
+                          |
+                          v
+                   FastAPI Backend
+                    /      |      \
+                   v       v       v
+              Red Team  Blue Team  Audit /
+               Service  Service   Commit-Reveal
+                    \      |      /
+                     \     |     /
+                      v    v    v
+                      Model Gateway
+                            |
+                            v
+                       Model Service
 ```
 
-*This diagram represents the logical architecture. It is not a complete network-isolation or deployment diagram.*
+### Architecture Components
 
-### Architecture Principles
+| Component           | Responsibility                                                  |
+| ------------------- | --------------------------------------------------------------- |
+| Frontend            | Displays the available evaluation workflows and results         |
+| FastAPI Backend     | Coordinates API requests and evaluation operations              |
+| Red Team Service    | Executes adversarial test cases                                 |
+| Blue Team Service   | Performs defensive inspection and evaluation                    |
+| Model Gateway       | Intermediates model-related requests                            |
+| Model Service       | Provides the model-facing component                             |
+| Audit Functionality | Supports event retrieval and integrity verification             |
+| Commit-Reveal       | Supports commitment, evaluation, reveal, and verification steps |
 
-* **Separation of responsibilities:** Each service has a defined role.
-* **Controlled communication:** Services communicate through configured interfaces.
-* **Defense in depth:** Container hardening complements application-level controls.
-* **Auditable workflows:** Security operations have dedicated audit functionality.
-* **Evaluation integrity:** Commit-Reveal mechanisms support structured evaluation procedures.
-
----
-
-## 🔐 Security Design
-
-Bayora Shield incorporates multiple security-oriented design measures.
-
-| Security area         | Implemented approach                                                                              | Important qualification                                           |
-| --------------------- | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| Container hardening   | Read-only root filesystem, dropped capabilities, and no-new-privileges for Red Team and Blue Team | Does not eliminate all container escape or host risks             |
-| Temporary storage     | `/tmp` mounted as temporary storage                                                               | Does not establish complete data isolation                        |
-| Resource management   | Container resource limits                                                                         | Effectiveness depends on the configured limits                    |
-| Host exposure         | Red Team and Blue Team ports bound to loopback                                                    | Other host and container communication paths still require review |
-| Service communication | Dedicated Docker networks                                                                         | Network membership alone does not guarantee isolation             |
-| Audit integrity       | Audit retrieval and verification endpoints                                                        | Guarantees depend on the implementation and threat model          |
-| Evaluation integrity  | Commit-Reveal workflow                                                                            | Current pending state is held in memory                           |
-| Concurrent evaluation | Locking and an in-progress state                                                                  | Tested behavior is limited to the exercised scenarios             |
-
-### Network Isolation: Current Status
-
-The architecture uses separate Docker networks to separate service responsibilities.
-
-However, a network separation design is not proof that all unauthorized communication paths are blocked. End-to-end Red Team-to-Blue Team isolation still requires conclusive verification of the actual routing, firewall rules, and service communication paths.
-
-**Bayora Shield does not claim complete or production-grade network isolation at this stage.**
+> This is a logical architecture diagram, not proof of complete network isolation. Actual communication paths and security boundaries must be verified against the active Docker configuration and runtime behavior.
 
 ---
 
-## 🔏 Commit-Reveal Evaluation
+## 🔒 Security Design
 
-The Commit-Reveal mechanism is intended to help structure evaluation workflows so that a commitment is established before the corresponding evaluation data is revealed.
+Bayora Shield incorporates multiple security-oriented controls while acknowledging the limitations of a hackathon prototype.
 
-### Workflow
+| Security Area       | Current Approach                                                                         | Important Qualification                                 |
+| ------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| Container Hardening | Read-only filesystems, dropped capabilities, and no-new-privileges for selected services | Does not eliminate all container or host risks          |
+| Temporary Storage   | Temporary filesystem for `/tmp` where configured                                         | Does not prove complete data isolation                  |
+| Resource Management | Container resource limits                                                                | Effectiveness depends on the active configuration       |
+| Host Exposure       | Red Team and Blue Team published ports bound to loopback                                 | Other communication paths require review                |
+| Service Networking  | Dedicated Docker networks as configured                                                  | Network membership alone does not prove isolation       |
+| Audit Integrity     | Audit retrieval and verification endpoints                                               | Guarantees depend on the implemented scheme             |
+| Commit-Reveal       | Commitment, blind evaluation, reveal, and verification                                   | Pending state is stored in memory                       |
+| Evaluation Coverage | Automated tests and implemented adversarial cases                                        | Does not establish effectiveness against unseen attacks |
+
+### Security Scope
+
+Bayora Shield does **not** claim complete or production-grade network isolation at this stage.
+
+End-to-end isolation requires repeatable verification of actual routing, service communication paths, and unauthorized-access attempts.
+
+The platform should be treated as a demonstration prototype rather than a production-certified security boundary.
+
+---
+
+## 🔏 Commit-Reveal Workflow
+
+The Commit-Reveal mechanism helps structure evaluation workflows so that a commitment is created before the corresponding payload is revealed.
 
 ```text
-      1. Create Commitment
-               │
-               ▼
-      2. Store Commitment
-               │
-               ▼
-      3. Run Blind Evaluation
-               │
-               ▼
-      4. Reveal Evaluation Data
-               │
-               ▼
-      5. Verify Commitment
-               │
-               ▼
-      6. Accept or Reject
-         the Operation
+       1. Create Commitment
+                |
+                v
+       2. Run Blind Evaluation
+                |
+                v
+       3. Reveal Payload
+                |
+                v
+       4. Verify Commitment
+                |
+                v
+       5. Accept or Reject
+          the Operation
 ```
 
 ### Intended Benefits
 
-* Separates commitment from reveal.
+* Separates commitment creation from reveal.
 * Supports verification of revealed evaluation data.
-* Rejects invalid or conflicting operations.
+* Rejects invalid or conflicting operations where implemented.
 * Includes handling for concurrent evaluation requests.
 
-### Current Implementation Considerations
+### Current Limitations
 
-* Pending commitments are stored in application memory.
+* Pending commitment state is stored in application memory.
 * Pending state is lost if the API process restarts.
-* Persistent storage and recovery are not yet provided by the current in-memory design.
-* The mechanism does not independently guarantee the truthfulness of an evaluation result or prevent every possible attack.
+* Persistent storage and recovery are not provided by the current in-memory design.
+* The workflow does not independently prove that an evaluation result is truthful or prevent every possible attack.
 
 ---
 
 ## 🧰 Technology Stack
 
-| Technology             | Purpose                               |
-| ---------------------- | ------------------------------------- |
-| Python                 | Application development               |
-| FastAPI                | Backend API framework                 |
-| Docker                 | Containerization                      |
-| Docker Compose         | Multi-service orchestration           |
-| Pytest                 | Automated testing                     |
-| Ruff                   | Python linting                        |
-| Git and GitHub         | Version control and source management |
-| Linux networking tools | Network and firewall configuration    |
+| Technology        | Purpose                                                |
+| ----------------- | ------------------------------------------------------ |
+| Python            | Backend and service implementation                     |
+| FastAPI           | Backend API framework                                  |
+| TypeScript        | Frontend development                                   |
+| React             | Frontend user interface                                |
+| Vite              | Frontend development and build tooling                 |
+| Docker            | Containerization                                       |
+| Docker Compose    | Multi-service orchestration                            |
+| Pytest            | Automated testing                                      |
+| Ruff              | Python linting                                         |
+| Git               | Version control                                        |
+| GitHub            | Source code hosting                                    |
+| Vercel            | Frontend hosting                                       |
+| Cloudflare Tunnel | Temporary public access to the locally running backend |
 
-The exact dependencies and service configuration are defined by the repository's dependency and Docker configuration files.
+The repository's dependency manifests, Dockerfiles, and Compose configuration define the exact dependencies and service settings.
 
 ---
 
@@ -281,8 +277,8 @@ Install the following tools:
 
 * Git
 * Docker Desktop with Docker Compose
-* Python version compatible with the project
-* PowerShell on Windows, or an appropriate terminal on Linux/macOS
+* Python compatible with the project
+* Node.js and npm for frontend development
 
 ### 1. Clone the Repository
 
@@ -291,17 +287,17 @@ git clone https://github.com/praveena-pawar/bayora-shield.git
 cd bayora-shield
 ```
 
-### 2. Configure the Environment
+### 2. Configure Environment Variables
 
-Review the repository for environment configuration files and documented variables.
+Review the repository's configuration and service files for required environment variables.
 
-Create any required local environment file using the variable names expected by the application.
+Create local environment files only where the project expects them.
 
-**Do not commit API keys, credentials, or other secrets to GitHub.**
+**Never commit API keys, credentials, access tokens, or other secrets to GitHub.**
 
-### 3. Start the Services
+### 3. Build and Start the Services
 
-From the directory containing `compose.yaml`, run:
+From the repository root, run:
 
 ```bash
 docker compose up -d --build
@@ -319,85 +315,80 @@ Inspect service logs when troubleshooting:
 docker compose logs --tail=100
 ```
 
-> These are the standard Docker Compose commands. Confirm the actual service configuration, required environment variables, and startup dependencies in the repository before relying on them for a clean installation.
+### 4. Check the Backend API
 
-### 4. Check the API
+If the Compose configuration publishes the API on host port `8001`, open:
 
-If the API is configured to publish host port `8001`, open:
+* **Health Check:** http://localhost:8001/health
+* **API Documentation:** http://localhost:8001/docs
 
-```text
-http://localhost:8001/health
-```
+The available endpoints depend on the active service configuration.
 
-If FastAPI documentation is enabled, visit:
+### 5. Run Backend Tests
 
-```text
-http://localhost:8001/docs
-```
-
-The configured API port and endpoint availability depend on the Compose configuration.
-
-### 5. Run the Automated Tests
-
-Create and activate a virtual environment if required by your development setup, then install the project's declared development dependencies.
-
-Run:
+Install the project's declared dependencies and development dependencies, then run:
 
 ```bash
-python -m pytest -v
+python -m pytest -q
 ```
 
-Run Ruff against the application-code directories:
+Run lint checks if Ruff is installed:
 
 ```bash
 python -m ruff check backend security evaluator
 ```
 
-These commands reflect the project's existing test and lint workflow. They assume the relevant dependencies are installed.
+### 6. Stop the Services
+
+```bash
+docker compose down
+```
+
+This stops and removes the Compose containers and network. Persistent volumes, if configured, may remain.
 
 ---
 
 ## 🔌 API Endpoints
 
-The backend includes the following endpoint groups.
+The backend includes endpoint groups for health checks, security inspection, evaluation, audit operations, and Commit-Reveal.
 
-| Endpoint                               | Purpose                                   |
-| -------------------------------------- | ----------------------------------------- |
-| `GET /health`                          | Health check                              |
-| `GET /audit/events`                    | Retrieve audit events                     |
-| `GET /audit/verify`                    | Verify audit integrity                    |
-| `POST /security/inspect`               | Inspect an input using security logic     |
-| `/inference`                           | Inference workflow                        |
-| `POST /security/validate`              | Validate security-related inputs          |
-| `POST /evaluation/run`                 | Run an evaluation                         |
-| `POST /evaluation/run-red-team`        | Run a Red Team evaluation                 |
-| `POST /evaluation/run-red-team-suite`  | Run the Red Team suite                    |
-| `POST /evaluation/run-blue-team-suite` | Run the Blue Team suite                   |
-| `/commit-reveal/commit`                | Create an evaluation commitment           |
-| `/commit-reveal/verify`                | Verify a revealed payload                 |
-| `/commit-reveal/run-evaluation`        | Run a blind evaluation                    |
-| `/commit-reveal/evaluate`              | Perform the Commit-Reveal evaluation flow |
+| Endpoint                               | Purpose                                           |
+| -------------------------------------- | ------------------------------------------------- |
+| `GET /health`                          | Health check                                      |
+| `GET /audit/events`                    | Retrieve audit events                             |
+| `GET /audit/verify`                    | Verify audit integrity                            |
+| `POST /security/inspect`               | Inspect an input using implemented security logic |
+| `/inference`                           | Model-related inference workflow                  |
+| `POST /security/validate`              | Validate security-related inputs                  |
+| `POST /evaluation/run`                 | Run an evaluation                                 |
+| `POST /evaluation/run-red-team`        | Run a Red Team evaluation                         |
+| `POST /evaluation/run-red-team-suite`  | Run the Red Team test suite                       |
+| `POST /evaluation/run-blue-team-suite` | Run the Blue Team test suite                      |
+| `/commit-reveal/commit`                | Create an evaluation commitment                   |
+| `/commit-reveal/verify`                | Verify a revealed payload                         |
+| `/commit-reveal/run-evaluation`        | Run blind evaluation                              |
+| `/commit-reveal/evaluate`              | Run the Commit-Reveal evaluation flow             |
 
-**Note:** The table identifies endpoint paths and their intended roles. Confirm each HTTP method, request schema, response schema, and status code in the running API documentation before integrating a client.
+**Important:** This table describes intended endpoint roles. Use the running API documentation at `/docs` to confirm exact HTTP methods, request schemas, response schemas, and status codes.
 
 ---
 
 ## 🧪 Testing
 
-Testing is an important part of the Bayora Shield development process.
+The project has an automated backend test suite and recorded manual UI checks.
 
-### Recorded Test Results
+| Test Area                    | Recorded Result                              |
+| ---------------------------- | -------------------------------------------- |
+| Backend automated test suite | 145 tests passed in the latest reported run  |
+| Red Team detector suite      | 15 of 15 test cases passed in a recorded run |
+| Red Team UI                  | Manually checked                             |
+| Blue Team UI                 | Manually checked                             |
+| Commit-Reveal workflow       | Manually checked                             |
+| Audit Explorer               | Manually checked                             |
 
-| Test area                        | Result                                         |
-| -------------------------------- | ---------------------------------------------- |
-| Full automated test suite        | 144 tests passed in a previous run             |
-| Commit-Reveal API tests          | 11 tests passed in a targeted run              |
-| Application-code Ruff checks     | Passed in a previous run                       |
-| Red Team security detector suite | 15 of 15 test cases passed in the recorded run |
+These results reflect the tested version and scenarios. They do not guarantee general security effectiveness or production readiness.
 
-The full-suite result predates the addition of the eleventh Commit-Reveal API test. Therefore, the 144-test result should not be presented as a verified result for the latest complete test suite.
-
-The Red Team detector results describe performance on the tested cases only. They do not establish general security effectiveness against unseen attacks.
+Re-run the tests against the exact commit being submitted to confirm the current results.
 
 ---
 
@@ -405,16 +396,15 @@ The Red Team detector results describe performance on the tested cases only. The
 
 Bayora Shield is a hackathon prototype, not a production-certified security platform.
 
-Known areas for further work include:
+Known areas for further improvement include:
 
-1. **Network isolation verification:** End-to-end isolation between adversarial and defensive services requires conclusive verification.
-2. **Persistent state:** Commit-Reveal state is stored in memory and does not survive API restarts.
-3. **Audit hardening:** Stronger guarantees against privileged tampering require additional controls.
-4. **Evaluation coverage:** Larger, more diverse adversarial datasets are needed to assess defensive performance.
-5. **Observability:** More comprehensive metrics, structured logs, and operational monitoring would improve debugging and evaluation.
-6. **Production readiness:** Authentication, authorization, secret management, deployment hardening, and recovery procedures require further assessment.
-
-These limitations are explicitly acknowledged so that the prototype's demonstrated capabilities are distinguishable from future goals.
+1. **Network Isolation Verification:** End-to-end Red Team-to-Blue Team isolation needs repeatable tests against actual runtime communication paths.
+2. **Persistent State:** Commit-Reveal state is stored in memory and does not survive API restarts.
+3. **Audit Hardening:** Stronger protections against privileged tampering and independent audit evidence anchoring require further work.
+4. **Evaluation Coverage:** Broader adversarial datasets are needed to evaluate defensive performance.
+5. **Observability:** More comprehensive metrics, structured logs, and operational monitoring would improve troubleshooting.
+6. **Production Readiness:** Authentication, authorization, secret management, rate limiting, deployment hardening, and recovery procedures require further assessment.
+7. **Public Demo Availability:** The backend currently depends on the maintainer's computer, Docker, internet connection, and temporary Cloudflare Tunnel.
 
 ---
 
@@ -431,65 +421,63 @@ These limitations are explicitly acknowledged so that the prototype's demonstrat
 
 ### Phase 2 — Interactive Demonstration
 
-* [ ] Build the frontend dashboard.
-* [ ] Display security inspection results.
-* [ ] Provide an interface for running evaluations.
-* [ ] Display audit and verification results.
-* [ ] Demonstrate the Commit-Reveal workflow.
+* [x] Deploy the frontend demonstration.
+* [x] Display evaluation results.
+* [x] Demonstrate Red Team and Blue Team workflows.
+* [x] Demonstrate the Commit-Reveal workflow.
+* [x] Demonstrate audit retrieval and verification.
 
 ### Phase 3 — Security Verification
 
 * [ ] Verify service-to-service isolation end to end.
-* [ ] Validate firewall behavior using repeatable tests.
+* [ ] Validate network and unauthorized-access behavior with repeatable tests.
 * [ ] Expand adversarial test coverage.
-* [ ] Document verified security guarantees and remaining risks.
+* [ ] Document verified guarantees and residual risks.
 
 ### Phase 4 — Reliability and Deployment
 
-* [ ] Add persistent storage for evaluation state.
+* [ ] Add persistent storage for pending evaluation state.
 * [ ] Improve error reporting and operational visibility.
 * [ ] Add recovery and restart-handling procedures.
-* [ ] Prepare repeatable deployment and demonstration instructions.
+* [ ] Prepare repeatable deployment and monitoring instructions.
+* [ ] Evaluate custom user-supplied Red Team and Blue Team payloads with server-side validation and safe execution.
 
 ---
 
 ## 🤝 Contributing
 
-Contributions that improve the platform's reliability, security, testing, documentation, and usability are welcome.
-
-Suggested contribution workflow:
+Contributions focused on reliability, security, testing, documentation, and usability are welcome.
 
 1. Fork the repository.
-2. Create a feature branch.
-3. Make a focused change.
-4. Add or update tests.
-5. Run the relevant test suite.
-6. Open a pull request explaining the change and its verification.
+2. Create a focused feature branch.
+3. Implement the change and add or update tests.
+4. Run the relevant tests and lint checks.
+5. Open a pull request explaining the change and how it was verified.
 
-Please do not include secrets, credentials, or sensitive testing data in commits.
+Please do not commit secrets, credentials, or sensitive testing data.
 
 ---
 
 ## 📜 License
 
-A license has not been specified in this README.
+A license has not yet been specified. Until a license is added to the repository, reuse and redistribution permissions should not be assumed.
 
-Before publishing the project for reuse, add an appropriate `LICENSE` file and ensure that any third-party dependencies and assets are used according to their licenses.
+Add an appropriate `LICENSE` file before explicitly inviting reuse of the code.
 
 ---
 
-## 👥 Project
+## 👥 Project Information
 
-**Project:** Bayora Shield
-**Event:** Hack in Hills '26
-**Challenge:** Challenge 04 — Securing Adversarial AI Safety Testing Infrastructure
-
-**Repository:** [bayora-shield](https://github.com/praveena-pawar/bayora-shield)
+* **Project:** Bayora Shield
+* **Event:** Hack in Hills '26
+* **Challenge:** Challenge 04 — Securing Adversarial AI Safety Testing Infrastructure
+* **Repository:** https://github.com/praveena-pawar/bayora-shield
+* **Live Demo:** https://bayora-shield.vercel.app/
 
 ---
 
 ### Building Safer AI Security Testing Infrastructure
 
-Bayora Shield explores how adversarial testing, defensive evaluation, controlled service communication, and auditable workflows can contribute to more responsible AI security testing.
+Bayora Shield explores how adversarial testing, defensive evaluation, controlled service communication, and auditable workflows can support more trustworthy AI security testing.
 
-*The project is under active development. Security claims should be interpreted according to the implemented controls and available test evidence.*
+*Security claims should be interpreted according to the implemented controls and available test evidence.*
