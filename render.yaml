@@ -1,0 +1,12 @@
+services:
+
+* type: web
+  name: bayora-shield-api
+  runtime: docker
+  plan: free
+  region: singapore
+  branch: main
+  dockerfilePath: ./Dockerfile
+  dockerContext: .
+  healthCheckPath: /health
+  autoDeploy: false
