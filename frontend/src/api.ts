@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:8001";
+const API_BASE_URL = "https://barbie-nothing-gary-solomon.trycloudflare.com";
 
 export interface HealthResponse {
 status: string;
