@@ -122,7 +122,7 @@ def request_model_inference(prompt: str) -> ModelInferenceResponse:
 
     gateway_url = os.getenv(
         "MODEL_GATEWAY_URL",
-        "http://model-gateway:8005/infer",
+        "http://model-gateway:8005",
     ).rstrip("/") + "/infer"
 
     try:

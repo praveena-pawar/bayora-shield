@@ -8,3 +8,45 @@ services:
     dockerContext: .
     healthCheckPath: /health
     autoDeploy: false
+    envVars:
+      - key: RED_TEAM_URL
+        value: http://bayora-redteam:8002
+      - key: BLUE_TEAM_URL
+        value: http://bayora-blueteam:8003
+      - key: MODEL_GATEWAY_URL
+        value: http://bayora-model-gateway:8005
+
+  - type: pserv
+    name: bayora-redteam
+    runtime: docker
+    plan: starter
+    region: singapore
+    dockerfilePath: ./Dockerfile.redteam
+    dockerContext: .
+
+  - type: pserv
+    name: bayora-blueteam
+    runtime: docker
+    plan: starter
+    region: singapore
+    dockerfilePath: ./Dockerfile.blueteam
+    dockerContext: .
+
+  - type: pserv
+    name: bayora-model-gateway
+    runtime: docker
+    plan: starter
+    region: singapore
+    dockerfilePath: ./Dockerfile.gateway
+    dockerContext: .
+    envVars:
+      - key: MODEL_SERVICE_URL
+        value: http://bayora-model-service:8004
+
+  - type: pserv
+    name: bayora-model-service
+    runtime: docker
+    plan: starter
+    region: singapore
+    dockerfilePath: ./Dockerfile.model
+    dockerContext: .
