@@ -1,4 +1,4 @@
-const API_BASE_URL = "https://barbie-nothing-gary-solomon.trycloudflare.com";
+const API_BASE_URL = "https://relate-cameras-auditor-transform.trycloudflare.com";
 
 export interface HealthResponse {
 status: string;
