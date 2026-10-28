@@ -1,4 +1,4 @@
-const API_BASE_URL = "https://relate-cameras-auditor-transform.trycloudflare.com";
+const API_BASE_URL = "https://encourage-allowance-warcraft-wrist.trycloudflare.com";
 
 export interface HealthResponse {
 status: string;
