@@ -1,4 +1,4 @@
-const API_BASE_URL = "https://jessica-mon-ken-alternatives.trycloudflare.com";
+const API_BASE_URL = "https://likes-contractors-poor-centers.trycloudflare.com";
 
 export interface HealthResponse {
 status: string;
