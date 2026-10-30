@@ -1,4 +1,4 @@
-const API_BASE_URL = "https://proud-championships-carriers-movers.trycloudflare.com ";
+const API_BASE_URL = "https://asp-fun-toolkit-consciousness.trycloudflare.com";
 
 export interface HealthResponse {
 status: string;
