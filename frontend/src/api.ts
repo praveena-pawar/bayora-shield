@@ -1,4 +1,4 @@
-const API_BASE_URL = "https://plugins-avoiding-shannon-conventional.trycloudflare.com";
+const API_BASE_URL = "https://albuquerque-consumers-emperor-kernel.trycloudflare.com";
 
 export interface HealthResponse {
 status: string;
