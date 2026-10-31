@@ -1,4 +1,4 @@
-const API_BASE_URL = "https://asp-fun-toolkit-consciousness.trycloudflare.com";
+const API_BASE_URL = "https://plugins-avoiding-shannon-conventional.trycloudflare.com";
 
 export interface HealthResponse {
 status: string;
