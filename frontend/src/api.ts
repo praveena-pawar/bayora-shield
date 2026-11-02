@@ -1,4 +1,4 @@
-const API_BASE_URL = "https://invitation-pubmed-cant-emails.trycloudflare.com";
+const API_BASE_URL = "https://belong-dev-webcast-blonde.trycloudflare.com";
 
 export interface HealthResponse {
 status: string;
