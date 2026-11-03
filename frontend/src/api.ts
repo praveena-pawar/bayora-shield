@@ -5,6 +5,7 @@ status: string;
 service: string;
 }
 
+
 export async function getHealth(): Promise<HealthResponse> {
 const response = await fetch(`${API_BASE_URL}/health`);
 
